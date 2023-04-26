@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Interactive Map</title>
+        <!--Leaflet CSS-->
+         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+     integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
+     crossorigin=""/>
+
+        <!--Leaflet JS-->
+        <!-- Make sure you put this AFTER Leaflet's CSS -->
+ <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+     integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
+     crossorigin=""></script>
+
+        <!--Set map height-->
+        <style>
+            #mapid { height: 700px; }
+        </style>
+    </head>
+<body>
+<!--    {% if stations %}-->
+<!--    <ul>-->
+<!--        {% for station in stations %}-->
+<!--            <li>-->
+<!--                {{ station.latitude }}, {{ station.longitude }}-->
+<!--            </li>-->
+<!--        {% endfor %}-->
+<!--    </ul>-->
+<!--    {% endif %}-->
+    <!--map div-->
+    <div id="mapid"></div>
+
+    <!--map js-->
+    <script>
+        var map = L.map('mapid').setView([51.919438, 19.145136], 6);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        L.marker([51.919438, 19.145136]).addTo(map)
+            .bindPopup('I am in Poland.<br> I want to know the meteorological conditioooons :/.')
+            .openPopup();
+
+        // for each location
+        {% for station in stations %}-->
+        var circle = L.circle([{{ station.latitude }}, {{ station.longitude }}], {
+            color: 'red',
+            fillColor: '#f03',
+            fillOpacity: 0.5,
+            radius: 5
+        }).addTo(map);
+        {% endfor %}
+    </script>
+</body>
+</html>
