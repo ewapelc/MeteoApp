@@ -20,6 +20,32 @@
         </style>
     </head>
 <body>
+
+
+<div style="height: 30px;">
+    <form method="post">
+        {% csrf_token %}
+        <label for="country">Select country</label>
+        <select id="country" name="country">
+            {% if countries %}
+                {% for country in countries %}
+                    <option value="{{ country.id }}">{{ country.name }}</option>
+                {% endfor %}
+            {% endif %}
+        </select>
+        <input type="submit" value="Submit">
+    </form>
+</div>
+
+
+<h2>
+   {% if my_country %}
+        <p>{{ my_country.name }}</p>
+<!--        <p>is set</p>-->
+    {% endif %}
+</h2>
+
+
 <!--    {% if stations %}-->
 <!--    <ul>-->
 <!--        {% for station in stations %}-->
@@ -34,14 +60,17 @@
 
     <!--map js-->
     <script>
-        var map = L.map('mapid').setView([51.919438, 19.145136], 6);
+        var map = L.map('mapid').setView(["{{ my_country.lat }}", "{{ my_country.lon }}"], 3);
+
+<!--51.919438, 19.145136-->
+
 
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        L.marker([51.919438, 19.145136]).addTo(map)
-            .bindPopup('I am in Poland.<br> I want to know the meteorological conditioooons :/.')
+        L.marker(["{{ my_country.lat }}", "{{ my_country.lon }}"]).addTo(map)
+            .bindPopup("{{ my_country.name }}")
             .openPopup();
 
         // for each location

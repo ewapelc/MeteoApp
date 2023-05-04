@@ -1,17 +1,6 @@
 from django.contrib.gis.db import models
 
 # Create your models here.
-class Map(models.Model):
-    latitude = models.FloatField()
-    longitude = models.FloatField()
-    time = models.DateField()
-    step = models.DurationField()
-    atmosphereSingleLayer = models.FloatField()
-    valid_time = models.DateField()
-    pwat = models.FloatField()
-    geometry = models.PointField()
-
-
 class WorldBorder(models.Model):
     # Regular Django fields corresponding to the attributes in the
     # world borders shapefile.
@@ -33,3 +22,24 @@ class WorldBorder(models.Model):
     # Returns the string representation of the model.
     def __str__(self):
         return self.name
+
+
+
+class Location(models.Model):
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    time = models.DateField()
+    step = models.DurationField()
+    atmosphereSingleLayer = models.FloatField()
+    valid_time = models.DateField()
+    # Meteorological variables
+    temp = models.FloatField()
+    rel_hum = models.FloatField()
+    tcc = models.FloatField()
+    spec_hum = models.FloatField()
+    u_wind = models.FloatField()
+    v_wind = models.FloatField()
+    gust = models.FloatField()
+    pwat = models.FloatField()
+    #
+    geometry = models.PointField()
