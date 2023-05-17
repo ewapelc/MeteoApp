@@ -17,71 +17,120 @@
         <!--Set map height-->
         <style>
             #mapid { height: 700px; }
+            .user-input {display: inline-block}
         </style>
     </head>
 <body>
 
 
-<div style="height: 30px;">
-    <form method="post">
-        {% csrf_token %}
-        <label for="country">Select country</label>
-        <select id="country" name="country">
-            {% if countries %}
-                {% for country in countries %}
-                    <option value="{{ country.id }}">{{ country.name }}</option>
-                {% endfor %}
-            {% endif %}
-        </select>
-        <input type="submit" value="Submit">
-    </form>
-</div>
+    <div style="height: 100px;" >
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="user-input">
+                <label for="country">Select country</label>
+                <select id="country" name="country">
+                    {% if countries %}
+                        {% for country in countries %}
+                            <option value="{{ country.id }}">{{ country.name }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
 
 
-<h2>
-   {% if my_country %}
-        <p>{{ my_country.name }}</p>
-<!--        <p>is set</p>-->
-    {% endif %}
-</h2>
+            <div class="user-input">
+                <p>Meteorological variable:</p>
+                <input type="radio" id="temp" name="meteo_var" value="temp">
+                <label for="temp">Temperature</label><br>
+
+                <input type="radio" id="rel_hum" name="meteo_var" value="rel_hum">
+                <label for="rel_hum">Relative Humidity</label><br>
+
+                <input type="radio" id="spec_hum" name="meteo_var" value="spec_hum">
+                <label for="spec_hum">Specific Humidity</label>
+
+                <input type="radio" id="tcc" name="meteo_var" value="tcc">
+                <label for="tcc">Total Cloud Cover</label>
+
+                <input type="radio" id="u_wind" name="meteo_var" value="u_wind">
+                <label for="u_wind">U Component of Wind</label>
+
+                <input type="radio" id="v_wind" name="meteo_var" value="v_wind">
+                <label for="v_wind">V Component of Wind</label>
+
+                <input type="radio" id="gust" name="meteo_var" value="gust">
+                <label for="gust">Wind Speed</label>
+
+                <input type="radio" id="pwat" name="meteo_var" value="pwat">
+                <label for="pwat">Precipitable Water</label>
 
 
-<!--    {% if stations %}-->
-<!--    <ul>-->
-<!--        {% for station in stations %}-->
-<!--            <li>-->
-<!--                {{ station.latitude }}, {{ station.longitude }}-->
-<!--            </li>-->
-<!--        {% endfor %}-->
-<!--    </ul>-->
-<!--    {% endif %}-->
+            </div>
+
+                <input type="submit" value="Submit">
+        </form>
+    </div>
+
+
+    <h1>
+       {% if selected_country %}
+            <p>{{ selected_country.name }}, {{ request.session.meteo_var }}</p>
+        {% endif %}
+    </h1>
+
     <!--map div-->
     <div id="mapid"></div>
 
     <!--map js-->
     <script>
-        var map = L.map('mapid').setView(["{{ my_country.lat }}", "{{ my_country.lon }}"], 3);
-
-<!--51.919438, 19.145136-->
+        var map = L.map('mapid').setView(["{{ selected_country.lat }}", "{{ selected_country.lon }}"], 3);
 
 
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        L.marker(["{{ my_country.lat }}", "{{ my_country.lon }}"]).addTo(map)
-            .bindPopup("{{ my_country.name }}")
+        L.marker(["{{ selected_country.lat }}", "{{ selected_country.lon }}"]).addTo(map)
+            .bindPopup("{{ selected_country.name }}")
             .openPopup();
+
 
         // for each location
         {% for station in stations %}-->
-        var circle = L.circle([{{ station.latitude }}, {{ station.longitude }}], {
-            color: 'red',
-            fillColor: '#f03',
-            fillOpacity: 0.5,
-            radius: 5
-        }).addTo(map);
+        var circle = L.marker([{{ station.latitude }}, {{ station.longitude }}])
+
+<!--        meteo variables-->
+        {% if request.session.meteo_var == 'temp' %}
+        circle.bindPopup("{{ station.temp }}")
+        {% elif request.session.meteo_var == 'rel_hum'  %}
+        circle.bindPopup("{{ station.rel_hum }}")
+        {% elif request.session.meteo_var == 'pwat'  %}
+        circle.bindPopup("{{ station.pwat }}")
+        {% elif request.session.meteo_var == 'tcc'  %}
+        circle.bindPopup("{{ station.tcc }}")
+        {% elif request.session.meteo_var == 'spec_hum'  %}
+        circle.bindPopup("{{ station.spec_hum }}")
+        {% elif request.session.meteo_var == 'u_wind'  %}
+        circle.bindPopup("{{ station.u_wind }}")
+        {% elif request.session.meteo_var == 'v_wind'  %}
+        circle.bindPopup("{{ station.v_wind }}")
+        {% elif request.session.meteo_var == 'gust'  %}
+        circle.bindPopup("{{ station.gust }}")
+        {% endif %}
+
+        circle.openPopup();
+        circle.addTo(map)
         {% endfor %}
+
+<!--        var meteo_vars = L.layerGroup()-->
+
+<!--        var overlayMaps = {-->
+<!--            "Variables": meteo_vars-->
+<!--        };-->
+
+<!--        var layerControl = L.control.layers(overlayMaps).addTo(map);-->
+
     </script>
 </body>
 </html>

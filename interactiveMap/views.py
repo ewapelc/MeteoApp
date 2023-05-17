@@ -26,36 +26,24 @@ class Home(generic.ListView):
         # Change this later
         if 'country' not in self.request.session:
             self.request.session['country'] = 1
-        #
-        context['my_country'] = WorldBorder.objects.filter(id=self.request.session['country']).values().last()
 
-        country = WorldBorder.objects.filter(name=context['my_country']['name']).values()
+        if 'meteo_var' not in self.request.session:
+            self.request.session['meteo_var'] = 'temp'
+        #
+        context['selected_country'] = WorldBorder.objects.filter(id=self.request.session['country']).values().last()
+
+        country = WorldBorder.objects.filter(name=context['selected_country']['name']).values()
         country_geometry = country[0]['mpoly']
         points = Location.objects.filter(geometry__intersects=country_geometry)
         context['stations'] = points
         context['countries'] = WorldBorder.objects.all().order_by('name')
+
         return context
 
 
 
     def post(self, request, *args, **kwargs):
-        # self.object = None
-        # context = super().get_context_data()
-        # context['country_selection'] = WorldBorder.objects.filter(id=request.POST.get('country')).values()
-        # #---------------------
-        # country = WorldBorder.objects.filter(name='Poland').values()
-        # country_geometry = country[0]['mpoly']
-        # points = Map.objects.filter(geometry__intersects=country_geometry)
-        #
-        # context['stations'] = points
-        # context['countries'] = WorldBorder.objects.all()
-        # return context
         request.session['country'] = request.POST.get('country')
+        request.session['meteo_var'] = request.POST.get('meteo_var')
         return redirect('/')
 
-
-
-
-# country = WorldBorder.objects.filter(name='Poland').values()
-# country_geometry = country[0]['mpoly']
-# queryset = Map.objects.filter(geometry__intersects=country_geometry)
