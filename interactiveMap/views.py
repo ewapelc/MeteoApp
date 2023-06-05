@@ -1,3 +1,4 @@
+import folium as folium
 from django.shortcuts import render, redirect, reverse
 from django.views import generic
 from django.contrib.gis.geos import Point, Polygon
@@ -30,13 +31,29 @@ class Home(generic.ListView):
         if 'meteo_var' not in self.request.session:
             self.request.session['meteo_var'] = 'temp'
         #
+        selected_country = WorldBorder.objects.filter(id=self.request.session['country']).values().last()
+        # wyrzucić selected country z context??
         context['selected_country'] = WorldBorder.objects.filter(id=self.request.session['country']).values().last()
 
         country = WorldBorder.objects.filter(name=context['selected_country']['name']).values()
         country_geometry = country[0]['mpoly']
-        points = Location.objects.filter(geometry__intersects=country_geometry)
+        points = Location.objects.filter(geometry__intersects=country_geometry).values()
         context['stations'] = points
         context['countries'] = WorldBorder.objects.all().order_by('name')
+
+        #------------
+        m = folium.Map([selected_country['lat'], selected_country['lon']], zoom_start=3)
+        folium.Marker(location=[selected_country['lat'], selected_country['lon']],
+                      popup=selected_country['name']).add_to(m)
+
+        for station in points:
+            folium.Marker([station['latitude'], station['longitude']]).add_to(m)
+
+
+        m = m._repr_html_()  # updated
+        context['map'] = m
+        #-------
+
 
         return context
 

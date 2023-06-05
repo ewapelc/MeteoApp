@@ -9,14 +9,22 @@ class Command(BaseCommand):
     Load a CSV file to the database
     """
 
+    # def add_arguments(self, parser):
+    #     # Positional arguments
+    #     parser.add_argument("filename", nargs="+")
+
     def handle(self, *args, **options):
 
         parent = os.path.dirname
-        file_path = os.path.join(parent(parent(parent(parent((__file__))))), 'filestorage', 'csv', '20230501.00.csv')
+        file_path = os.path.join(parent(parent(parent(parent((__file__))))), 'filestorage', 'csv')
 
-        df = pd.read_csv(file_path)
+        for file in os.listdir(file_path):
+            print("Processing file: ", file)
 
-        engine = create_engine("postgresql://meteoadmin:test123@localhost:5432/meteo_global")
+            f = os.path.join(file_path, file)
+            df = pd.read_csv(f)
 
-        df.to_sql(Location._meta.db_table, if_exists='append', con=engine, index=False)
+            engine = create_engine("postgresql://meteoadmin:test123@localhost:5432/meteo_global")
+
+            df.to_sql(Location._meta.db_table, if_exists='append', con=engine, index=False)
 
