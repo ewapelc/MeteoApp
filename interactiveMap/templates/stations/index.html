@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <title>Interactive Map</title>
+        <title>MeteoApp</title>
         <!--Leaflet CSS-->
          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
      integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
@@ -41,18 +41,18 @@
             <div class="user-input">
                 <label for="date">Select date</label>
                 <select id="date" name="date">
-<!--                    {% if countries %}-->
-<!--                        {% for country in countries %}-->
-<!--                            <option value="{{ country.id }}">{{ country.name }}</option>-->
-<!--                        {% endfor %}-->
-<!--                    {% endif %}-->
+                    {% if times %}
+                        {% for time in times %}
+                            <option value="{{ time.time|date:'d-m-Y H:i' }}">{{ time.time|date:"d-m-Y H:i" }}</option>
+                        {% endfor %}
+                    {% endif %}
                 </select>
             </div>
 
 
             <div class="user-input">
                 <p>Meteorological variable:</p>
-                <input type="radio" id="temp" name="meteo_var" value="temp">
+                <input type="radio" id="temp" name="meteo_var" value="temp" checked>
                 <label for="temp">Temperature</label><br>
 
                 <input type="radio" id="rel_hum" name="meteo_var" value="rel_hum">
@@ -85,7 +85,8 @@
 
     <h1>
        {% if selected_country %}
-            <p>{{ selected_country.name }}, {{ request.session.meteo_var }}</p>
+            <p>{{ selected_country.name }}, {{ request.session.date }}, {{ request.session.meteo_var }},
+            {{ count }},</p>
         {% endif %}
     </h1>
 

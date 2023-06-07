@@ -28,10 +28,10 @@ class WorldBorder(models.Model):
 class Location(models.Model):
     latitude = models.FloatField()
     longitude = models.FloatField()
-    time = models.DateField()
+    time = models.DateTimeField()
     step = models.DurationField()
     atmosphereSingleLayer = models.FloatField()
-    valid_time = models.DateField()
+    valid_time = models.DateTimeField()
     # Meteorological variables
     temp = models.FloatField()
     rel_hum = models.FloatField()
