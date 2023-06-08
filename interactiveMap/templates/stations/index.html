@@ -3,8 +3,17 @@
     <head>
         <meta charset="utf-8">
         <title>MeteoApp</title>
+
+        <!--Google icons-->
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet">
+
+        <!--Custom CSS-->
+        {% load static %}
+        <link rel="stylesheet" href="{% static 'map_page.css' %}">
+
         <!--Leaflet CSS-->
-         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
      integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
      crossorigin=""/>
 
@@ -16,126 +25,105 @@
 
         <!--Set map height-->
         <style>
-            #mapid { height: 500px; }
+<!--            .map { position: absolute; width: 100%; }-->
             .user-input {display: inline-block}
         </style>
     </head>
 <body>
 
+<!--    &lt;!&ndash;My code&ndash;&gt;-->
+<!--    <div style="height: 100px;" >-->
+<!--        <form method="post">-->
+<!--            {% csrf_token %}-->
 
-    <div style="height: 100px;" >
-        <form method="post">
-            {% csrf_token %}
+<!--            <div class="user-input">-->
+<!--                <label for="country">Select country</label>-->
+<!--                <select id="country" name="country">-->
+<!--                    {% if countries %}-->
+<!--                        {% for country in countries %}-->
+<!--                            <option value="{{ country.id }}">{{ country.name }}</option>-->
+<!--                        {% endfor %}-->
+<!--                    {% endif %}-->
+<!--                </select>-->
+<!--            </div>-->
 
-            <div class="user-input">
-                <label for="country">Select country</label>
-                <select id="country" name="country">
-                    {% if countries %}
-                        {% for country in countries %}
-                            <option value="{{ country.id }}">{{ country.name }}</option>
-                        {% endfor %}
-                    {% endif %}
-                </select>
-            </div>
-
-            <div class="user-input">
-                <label for="date">Select date</label>
-                <select id="date" name="date">
-                    {% if times %}
-                        {% for time in times %}
-                            <option value="{{ time.time|date:'d-m-Y H:i' }}">{{ time.time|date:"d-m-Y H:i" }}</option>
-                        {% endfor %}
-                    {% endif %}
-                </select>
-            </div>
-
-
-            <div class="user-input">
-                <p>Meteorological variable:</p>
-                <input type="radio" id="temp" name="meteo_var" value="temp" checked>
-                <label for="temp">Temperature</label><br>
-
-                <input type="radio" id="rel_hum" name="meteo_var" value="rel_hum">
-                <label for="rel_hum">Relative Humidity</label><br>
-
-                <input type="radio" id="spec_hum" name="meteo_var" value="spec_hum">
-                <label for="spec_hum">Specific Humidity</label>
-
-                <input type="radio" id="tcc" name="meteo_var" value="tcc">
-                <label for="tcc">Total Cloud Cover</label>
-
-                <input type="radio" id="u_wind" name="meteo_var" value="u_wind">
-                <label for="u_wind">U Component of Wind</label>
-
-                <input type="radio" id="v_wind" name="meteo_var" value="v_wind">
-                <label for="v_wind">V Component of Wind</label>
-
-                <input type="radio" id="gust" name="meteo_var" value="gust">
-                <label for="gust">Wind Speed</label>
-
-                <input type="radio" id="pwat" name="meteo_var" value="pwat">
-                <label for="pwat">Precipitable Water</label>
-
-            </div>
-
-                <input type="submit" value="Submit">
-        </form>
-    </div>
+<!--            <div class="user-input">-->
+<!--                <label for="date">Select date</label>-->
+<!--                <select id="date" name="date">-->
+<!--                    {% if times %}-->
+<!--                        {% for time in times %}-->
+<!--                            <option value="{{ time.time|date:'d-m-Y H:i' }}">{{ time.time|date:"d-m-Y H:i" }}</option>-->
+<!--                        {% endfor %}-->
+<!--                    {% endif %}-->
+<!--                </select>-->
+<!--            </div>-->
 
 
-    <h1>
-       {% if selected_country %}
-            <p>{{ selected_country.name }}, {{ request.session.date }}, {{ request.session.meteo_var }},
-            {{ count }},</p>
-        {% endif %}
-    </h1>
+<!--            <div class="user-input">-->
+<!--                <p>Meteorological variable:</p>-->
+<!--                <input type="radio" id="temp" name="meteo_var" value="temp" checked>-->
+<!--                <label for="temp">Temperature</label><br>-->
 
-    <!--map div-->
-    <div id="mapid">
-        {{ map|safe }}
-    </div>
+<!--                <input type="radio" id="rel_hum" name="meteo_var" value="rel_hum">-->
+<!--                <label for="rel_hum">Relative Humidity</label><br>-->
 
-    <!--map js-->
-    <script>
-<!--        var map = L.map('mapid').setView(["{{ selected_country.lat }}", "{{ selected_country.lon }}"], 3);-->
+<!--                <input type="radio" id="spec_hum" name="meteo_var" value="spec_hum">-->
+<!--                <label for="spec_hum">Specific Humidity</label>-->
+
+<!--                <input type="radio" id="tcc" name="meteo_var" value="tcc">-->
+<!--                <label for="tcc">Total Cloud Cover</label>-->
+
+<!--                <input type="radio" id="u_wind" name="meteo_var" value="u_wind">-->
+<!--                <label for="u_wind">U Component of Wind</label>-->
+
+<!--                <input type="radio" id="v_wind" name="meteo_var" value="v_wind">-->
+<!--                <label for="v_wind">V Component of Wind</label>-->
+
+<!--                <input type="radio" id="gust" name="meteo_var" value="gust">-->
+<!--                <label for="gust">Wind Speed</label>-->
+
+<!--                <input type="radio" id="pwat" name="meteo_var" value="pwat">-->
+<!--                <label for="pwat">Precipitable Water</label>-->
+
+<!--            </div>-->
+
+<!--                <input type="submit" value="Submit">-->
+<!--        </form>-->
+<!--    </div>-->
 
 
-<!--        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {-->
-<!--            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'-->
-<!--        }).addTo(map);-->
-
-<!--        L.marker(["{{ selected_country.lat }}", "{{ selected_country.lon }}"]).addTo(map)-->
-<!--            .bindPopup("{{ selected_country.name }}")-->
-<!--            .openPopup();-->
-
-
-<!--        // for each location-->
-<!--        {% for station in stations %}&ndash;&gt;-->
-<!--        var circle = L.marker([{{ station.latitude }}, {{ station.longitude }}])-->
-
-<!--&lt;!&ndash;        meteo variables&ndash;&gt;-->
-<!--        {% if request.session.meteo_var == 'temp' %}-->
-<!--        circle.bindPopup("{{ station.temp }}")-->
-<!--        {% elif request.session.meteo_var == 'rel_hum'  %}-->
-<!--        circle.bindPopup("{{ station.rel_hum }}")-->
-<!--        {% elif request.session.meteo_var == 'pwat'  %}-->
-<!--        circle.bindPopup("{{ station.pwat }}")-->
-<!--        {% elif request.session.meteo_var == 'tcc'  %}-->
-<!--        circle.bindPopup("{{ station.tcc }}")-->
-<!--        {% elif request.session.meteo_var == 'spec_hum'  %}-->
-<!--        circle.bindPopup("{{ station.spec_hum }}")-->
-<!--        {% elif request.session.meteo_var == 'u_wind'  %}-->
-<!--        circle.bindPopup("{{ station.u_wind }}")-->
-<!--        {% elif request.session.meteo_var == 'v_wind'  %}-->
-<!--        circle.bindPopup("{{ station.v_wind }}")-->
-<!--        {% elif request.session.meteo_var == 'gust'  %}-->
-<!--        circle.bindPopup("{{ station.gust }}")-->
+<!--    <h1>-->
+<!--       {% if selected_country %}-->
+<!--            <p>{{ selected_country.name }}, {{ request.session.date }}, {{ request.session.meteo_var }},-->
+<!--            {{ count }},</p>-->
 <!--        {% endif %}-->
+<!--    </h1>-->
 
-<!--        circle.openPopup();-->
-<!--        circle.addTo(map)-->
-<!--        {% endfor %}-->
 
+    <!--Side Panel-->
+    <div class="wrapper side-panel-open">
+        <div class="folium_map">
+            {{ map|safe }}
+        </div>
+
+        <div class="side">
+        <button class="side-panel-toggle" type="button">
+            <span class="material-icons sp-icon-open">keyboard_double_arrow_left</span>
+            <span class="material-icons sp-icon-close">keyboard_double_arrow_right</span>
+        </button>
+
+        <div class="side-panel">
+            Side panel content
+        </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.querySelector(".side-panel-toggle").addEventListener('click', () => {
+            document.querySelector(".wrapper").classList.toggle("side-panel-open");
+        });
     </script>
+
 </body>
 </html>

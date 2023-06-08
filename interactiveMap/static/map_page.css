@@ -1,0 +1,80 @@
+/* Side panel: https://codepen.io/dcode-software/pen/OJxEWWz  */
+
+body {
+    background-color: white;
+    margin: 0;
+    font-family: sans-serif;
+    line-height: 1.5;
+}
+
+.wrapper {
+    display: flex;
+    height: 100vh;
+}
+
+.folium_map {
+    flex-grow: 1;
+    /*padding: 20px;*/
+}
+
+.side {
+    position: relative;
+    display: flex;
+}
+
+.side-panel-toggle {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+
+    color: #ffffff;
+    background: #D3D3D3;
+    border: none;
+    border-radius: 5px 0 0 5px;
+    outline: none;
+    cursor: pointer;
+
+    position: absolute;
+    left: -40px;
+    top: 0px;
+
+    z-index: auto;
+
+}
+
+.side-panel-toggle:hover {
+    background: #5A5A5A;
+
+}
+
+.sp-icon-close {
+    display: none !important;
+}
+
+.side-panel {
+    display: none;
+    width: 200px;
+    flex-shrink: 0;
+    padding: 20px;
+    color: #ffffff;
+    background: #D3D3D3;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.35);
+
+    z-index: 1;
+
+}
+
+.side-panel-open .side-panel {
+    display: initial;
+
+}
+
+.side-panel-open .sp-icon-open {
+    display: none !important;
+}
+
+.side-panel-open .sp-icon-close {
+    display: initial !important;
+}
