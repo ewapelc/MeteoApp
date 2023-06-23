@@ -5,6 +5,7 @@ body {
     margin: 0;
     font-family: sans-serif;
     line-height: 1.5;
+    overflow: hidden;
 }
 
 .wrapper {
@@ -55,7 +56,7 @@ body {
 
 .side-panel {
     display: none;
-    width: 200px;
+    width: 250px;
     flex-shrink: 0;
     padding: 20px;
     color: #ffffff;
@@ -63,6 +64,8 @@ body {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.35);
 
     z-index: 1;
+
+    overflow-y: auto;
 
 }
 
@@ -78,3 +81,58 @@ body {
 .side-panel-open .sp-icon-close {
     display: initial !important;
 }
+
+
+/*---------------------------------*/
+
+select  {
+    width: 250px;
+}
+
+#form-meteo input {
+    float: left;
+}
+
+#form-meteo label {
+    float: left;
+}
+
+#form-meteo label + input {
+    clear: both;
+}
+
+/*----------------------------------------*/
+
+#plot-div {
+  position: fixed;
+  left: 15%;
+  bottom: 100px;
+  width: 900px;
+  height: 150px;
+  z-index: 9;
+  background-color: #f1f1f1;
+  text-align: center;
+  border: 1px solid #d3d3d3;
+
+  cursor: move;
+}
+
+#plot-div-header {
+  padding: 10px;
+  cursor: move;
+  z-index: 10;
+  background-color: #2196F3;
+  color: #fff;
+}
+
+
+#plot-btn {
+    z-index: 9;
+    position: absolute;
+    width: 100px;
+    height: 50px;
+    bottom: 20px;
+    left: 20px;
+    cursor: pointer;
+}
+

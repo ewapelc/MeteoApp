@@ -26,96 +26,111 @@
         <!--Set map height-->
         <style>
 <!--            .map { position: absolute; width: 100%; }-->
-            .user-input {display: inline-block}
+<!--            .user-input {display: inline-block}-->
         </style>
     </head>
 <body>
 
-<!--    &lt;!&ndash;My code&ndash;&gt;-->
-<!--    <div style="height: 100px;" >-->
-<!--        <form method="post">-->
-<!--            {% csrf_token %}-->
-
-<!--            <div class="user-input">-->
-<!--                <label for="country">Select country</label>-->
-<!--                <select id="country" name="country">-->
-<!--                    {% if countries %}-->
-<!--                        {% for country in countries %}-->
-<!--                            <option value="{{ country.id }}">{{ country.name }}</option>-->
-<!--                        {% endfor %}-->
-<!--                    {% endif %}-->
-<!--                </select>-->
-<!--            </div>-->
-
-<!--            <div class="user-input">-->
-<!--                <label for="date">Select date</label>-->
-<!--                <select id="date" name="date">-->
-<!--                    {% if times %}-->
-<!--                        {% for time in times %}-->
-<!--                            <option value="{{ time.time|date:'d-m-Y H:i' }}">{{ time.time|date:"d-m-Y H:i" }}</option>-->
-<!--                        {% endfor %}-->
-<!--                    {% endif %}-->
-<!--                </select>-->
-<!--            </div>-->
 
 
-<!--            <div class="user-input">-->
-<!--                <p>Meteorological variable:</p>-->
-<!--                <input type="radio" id="temp" name="meteo_var" value="temp" checked>-->
-<!--                <label for="temp">Temperature</label><br>-->
-
-<!--                <input type="radio" id="rel_hum" name="meteo_var" value="rel_hum">-->
-<!--                <label for="rel_hum">Relative Humidity</label><br>-->
-
-<!--                <input type="radio" id="spec_hum" name="meteo_var" value="spec_hum">-->
-<!--                <label for="spec_hum">Specific Humidity</label>-->
-
-<!--                <input type="radio" id="tcc" name="meteo_var" value="tcc">-->
-<!--                <label for="tcc">Total Cloud Cover</label>-->
-
-<!--                <input type="radio" id="u_wind" name="meteo_var" value="u_wind">-->
-<!--                <label for="u_wind">U Component of Wind</label>-->
-
-<!--                <input type="radio" id="v_wind" name="meteo_var" value="v_wind">-->
-<!--                <label for="v_wind">V Component of Wind</label>-->
-
-<!--                <input type="radio" id="gust" name="meteo_var" value="gust">-->
-<!--                <label for="gust">Wind Speed</label>-->
-
-<!--                <input type="radio" id="pwat" name="meteo_var" value="pwat">-->
-<!--                <label for="pwat">Precipitable Water</label>-->
-
-<!--            </div>-->
-
-<!--                <input type="submit" value="Submit">-->
-<!--        </form>-->
-<!--    </div>-->
-
-
-<!--    <h1>-->
-<!--       {% if selected_country %}-->
-<!--            <p>{{ selected_country.name }}, {{ request.session.date }}, {{ request.session.meteo_var }},-->
-<!--            {{ count }},</p>-->
-<!--        {% endif %}-->
-<!--    </h1>-->
-
-
-    <!--Side Panel-->
     <div class="wrapper side-panel-open">
         <div class="folium_map">
             {{ map|safe }}
         </div>
 
-        <div class="side">
-        <button class="side-panel-toggle" type="button">
-            <span class="material-icons sp-icon-open">keyboard_double_arrow_left</span>
-            <span class="material-icons sp-icon-close">keyboard_double_arrow_right</span>
-        </button>
+        <!--Plot-->
+        <button id="plot-btn" onclick="togglePlot()">Show Plot</button>
 
-        <div class="side-panel">
-            Side panel content
+        <div id="plot-div" class="plot">
+            <div id="plot-div-header">Placeholder for name of a plot</div>
+            {% autoescape off %}
+            {{ plot_div|safe }}
+            {% endautoescape %}
         </div>
+
+        <!--Side Panel-->
+        <div class="side">
+            <button class="side-panel-toggle" type="button">
+                <span class="material-icons sp-icon-open">keyboard_double_arrow_left</span>
+                <span class="material-icons sp-icon-close">keyboard_double_arrow_right</span>
+            </button>
+
+
+            <div class="side-panel">
+                <div>
+                   {% if selected_country %}
+                        <p>{{ selected_country.name }}, {{ request.session.date }}, {{ request.session.meteo_var }},
+                        {{ count }},</p>
+                    {% endif %}
+
+                                    <span>{{ results }}</span>
+                </div>
+                <hr>
+
+                <!--User selection-->
+                <div style="height: 100px;" >
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="user-input">
+                            <label for="country">Select country</label>
+                            <select id="country" name="country">
+                                {% if countries %}
+                                    {% for country in countries %}
+                                        <option value="{{ country.id }}">{{ country.name }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                        <hr>
+
+                        <div class="user-input">
+                            <label for="date">Select date</label>
+                            <select id="date" name="date">
+                                {% if times %}
+                                    {% for time in times %}
+                                        <option value="{{ time.time|date:'d-m-Y H:i' }}">{{ time.time|date:"d-m-Y H:i" }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                        <hr>
+
+                        <div id="form-meteo" class="user-input meteo">
+                            <p>Meteorological variable:</p>
+
+                            <input type="radio" id="temp" name="meteo_var" value="temp" checked>
+                            <label for="temp">Temperature</label><br>
+
+                            <input type="radio" id="rel_hum" name="meteo_var" value="rel_hum">
+                            <label for="rel_hum">Relative Humidity</label><br>
+
+                            <input type="radio" id="spec_hum" name="meteo_var" value="spec_hum">
+                            <label for="spec_hum">Specific Humidity</label>
+
+                            <input type="radio" id="tcc" name="meteo_var" value="tcc">
+                            <label for="tcc">Total Cloud Cover</label>
+
+                            <input type="radio" id="u_wind" name="meteo_var" value="u_wind">
+                            <label for="u_wind">U Component of Wind</label>
+
+                            <input type="radio" id="v_wind" name="meteo_var" value="v_wind">
+                            <label for="v_wind">V Component of Wind</label>
+
+                            <input type="radio" id="gust" name="meteo_var" value="gust">
+                            <label for="gust">Wind Speed</label>
+
+                            <input type="radio" id="pwat" name="meteo_var" value="pwat">
+                            <label for="pwat">Precipitable Water</label>
+                        </div>
+                        <hr>
+
+                            <input type="submit" value="Submit">
+                    </form>
+                </div>
+            </div>
         </div>
+
 
     </div>
 
@@ -123,6 +138,70 @@
         document.querySelector(".side-panel-toggle").addEventListener('click', () => {
             document.querySelector(".wrapper").classList.toggle("side-panel-open");
         });
+    </script>
+
+    <script>
+        function togglePlot() {
+          var x = document.getElementById("plot-div");
+          if (x.style.display === "block") {
+            x.style.display = "none";
+          } else {
+            x.style.display = "block";
+          }
+
+          var y = document.getElementById("plot-btn");
+          if(y.textContent === "Show Plot"){
+            y.textContent = "Hide Plot";
+          }else{
+            y.textContent= "Show Plot";
+          }
+        }
+    </script>
+
+    <script>
+        //Make the Timeseries plot div element draggagle:
+        dragElement(document.getElementById("plot-div"));
+
+        function dragElement(elmnt) {
+          var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+          if (document.getElementById(elmnt.id + "-header")) {
+            /* if present, the header is where you move the DIV from:*/
+            document.getElementById(elmnt.id + "-header").onmousedown = dragMouseDown;
+          } else {
+            /* otherwise, move the DIV from anywhere inside the DIV:*/
+            elmnt.onmousedown = dragMouseDown;
+          }
+
+          function dragMouseDown(e) {
+            e = e || window.event;
+            e.preventDefault();
+            // get the mouse cursor position at startup:
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            // call a function whenever the cursor moves:
+            document.onmousemove = elementDrag;
+          }
+
+          function elementDrag(e) {
+            e = e || window.event;
+            e.preventDefault();
+            // calculate the new cursor position:
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            // set the element's new position:
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+          }
+
+          function closeDragElement() {
+            /* stop moving when mouse button is released:*/
+            document.onmouseup = null;
+            document.onmousemove = null;
+          }
+        }
     </script>
 
 </body>

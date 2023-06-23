@@ -1,16 +1,19 @@
 import folium as folium
-from django.shortcuts import render, redirect, reverse
-from django.views import generic
-from django.contrib.gis.geos import Point, Polygon
-from django.contrib.gis.db.models.functions import Distance
-from .models import Location, WorldBorder
-import pytz
-from django.utils import timezone
-from datetime import datetime, timedelta
-from django.db.models import Q
+import geopandas as gpd
+from datetime import datetime
 
-from django.http import HttpResponseRedirect
-from django.contrib.sessions.backends.db import SessionStore
+import pandas as pd
+from django.shortcuts import redirect
+from django.views import generic
+from django.contrib.gis.geos import Point
+from .models import Location, WorldBorder
+from django.db.models import Subquery, Avg
+
+from django.shortcuts import render
+from plotly.offline import plot
+from plotly.graph_objs import Scatter
+import plotly.express as px
+
 
 latitude = 51.919438
 longitude = 19.145136
@@ -62,9 +65,116 @@ class Home(generic.ListView):
         folium.Marker(location=[selected_country['lat'], selected_country['lon']],
                       popup=selected_country['name']).add_to(m)
 
-        for station in points:
-            folium.Marker([station['latitude'], station['longitude']],
-                          popup=station[self.request.session['meteo_var']]).add_to(m)
+        # for station in points:
+        #     folium.Marker([station['latitude'], station['longitude']],
+        #                   popup=station[self.request.session['meteo_var']]).add_to(m)
+
+
+        # Plotly timeseries plot
+        #----------------
+        #
+        queryset = Location.objects.values('time').annotate(temp=Avg('temp')).order_by()
+        time = queryset.values_list('time', flat=True)
+        temp = queryset.values_list('temp', flat=True)
+        fig = px.line(
+            x=time,
+            y=temp,
+            width=900,
+            height=250,
+            labels={"x": "Date", "y": "Variable"}
+        )
+
+        # style the plot
+        fig.update_layout(margin=dict(b=30, l=30, r=30, t=30))
+
+        # remove label titles
+        fig.update_layout(yaxis_title=None)
+        fig.update_layout(xaxis_title=None)
+
+
+        fig = fig._repr_html_()  # updated
+
+        context['plot_div'] = fig
+
+
+        # Choropleth
+        # ------------------------------------------------------------------
+
+        # Required for Choropleth map
+        borders_df = gpd.GeoDataFrame(WorldBorder.objects.all().values())
+        # # meteo_df = gpd.GeoDataFrame(Location.objects.filter(time=datetime_obj).values())
+        # #
+        borders_df.rename(columns={'mpoly': 'geometry', 'iso2': 'country_iso2'}, inplace=True)
+        borders_df.drop(columns=['id'], inplace=True)
+        # meteo_df.drop(columns=['id'], inplace=True)
+
+        # Later - change into postgis function on Query results
+        # sjoin_res = gpd.sjoin(meteo_df, borders_df, how="left", predicate="intersects")
+        # res = sjoin_res[['latitude', 'longitude', 'time', 'step', 'atmosphereSingleLayer',
+        #                  'valid_time', 'temp', 'rel_hum', 'tcc', 'spec_hum', 'u_wind', 'v_wind',
+        #                  'gust', 'pwat', 'geometry', 'ISO2']]
+
+        # results = Location.objects.filter(time=datetime_obj).annotate(
+        #     country_iso2=Subquery(
+        #         WorldBorder.objects.filter(
+        #             mpoly__contains=OuterRef('geometry')
+        #         ).values('iso2')
+        #     )
+        # )
+        # ).values('country_iso2').annotate(
+        #     temp_avg=Avg('temp')
+        #     # rel_hum_avg=Avg('rel_hum'),
+        #     # spec_hum_avg=Avg('spec_hum'),
+        #     # tcc_avg=Avg('tcc'),
+        #     # u_wind_avg=Avg('u_wind'),
+        #     # v_wind_avg=Avg('v_wind'),
+        #     # gust_avg=Avg('gust'),
+        #     # pwat_avg=Avg('pwat')
+        # ).order_by()
+
+        context['results'] = Location.objects.values('time').annotate(temp=Avg('temp')).order_by()
+
+        #
+        # context['results'] = results.values('country_iso2').annotate(avg=Avg('temp'))
+
+
+
+        # grouped = res.groupby('country_iso2').mean().reset_index()
+        #
+        # borders_df.set_index('country_iso2', inplace=True)
+        # geo_json = gpd.GeoSeries(data=borders_df['geometry']).__geo_interface__
+        #
+        # folium.Choropleth(
+        #     name="temp",
+        #     geo_data=geo_json,
+        #     data=grouped,
+        #     columns=["ISO2", "temp"],
+        #     key_on="feature.id",
+        #     fill_color="YlGn",
+        #     fill_opacity=0.7,
+        #     line_opacity=0.2,
+        #     legend_name="Temperature"
+        # ).add_to(m)
+        #
+        # folium.Choropleth(
+        #     name="rel_hum",
+        #     geo_data=geo_json,
+        #     data=grouped,
+        #     columns=["ISO2", "rel_hum"],
+        #     key_on="feature.id",
+        #     fill_color="Blues",
+        #     fill_opacity=0.7,
+        #     line_opacity=0.2,
+        #     legend_name="Rel hum"
+        # ).add_to(m)
+        #
+        # folium.LayerControl().add_to(m)
+
+
+
+        #--------------------------------
+
+
 
 
         m = m._repr_html_()  # updated

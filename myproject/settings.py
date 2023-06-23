@@ -19,11 +19,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Make modifications required for GDAL package
 import os
 if os.name == 'nt':
+    # GDAL_LIBRARY_PATH = r'C:\Users\Ewa\PycharmProjects\MeteoApp\venv\Lib\site-packages\osgeo\gdal300'
+    # GEOS_LIBRARY_PATH = r'C:\Users\Ewa\PycharmProjects\MeteoApp\venv\Lib\site-packages\osgeo\geos_c'
+
     VENV_BASE = os.environ['VIRTUAL_ENV']
     os.environ['PATH'] = os.path.join(VENV_BASE, 'Lib\\site-packages\\osgeo') + ';' + os.environ['PATH']
+    # os.environ["PATH"] += os.pathsep + BASE_DIR + '\\venv\\Lib\\site-packages\\osgeo'
     os.environ['PROJ_LIB'] = os.path.join(VENV_BASE, 'Lib\\site-packages\\osgeo\\data\\proj') + ';' + os.environ['PATH']
-
-# GDAL_LIBRARY_PATH = os.path.join(os.environ['VIRTUAL_ENV'], 'Lib\\site-packages\\osgeo\\gdal300.dll')
 
 
 
@@ -141,7 +143,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = '/interactiveMap/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
