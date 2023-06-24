@@ -31,7 +31,7 @@ class Home(generic.ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Change this later
+        # change this later
         if 'country' not in self.request.session:
             self.request.session['country'] = 10
 
@@ -58,38 +58,85 @@ class Home(generic.ListView):
         context['countries'] = WorldBorder.objects.all().order_by('name')
         context['times'] = Location.objects.values('time').distinct().order_by('time')
 
+        selected_var = self.request.session['meteo_var']
+        var_data = self.long_name_and_unit(selected_var)
 
 
         #------------
-        m = folium.Map([selected_country['lat'], selected_country['lon']], zoom_start=3)
-        folium.Marker(location=[selected_country['lat'], selected_country['lon']],
-                      popup=selected_country['name']).add_to(m)
+        m = folium.Map([selected_country['lat'], selected_country['lon']], zoom_start=7)
 
-        # for station in points:
-        #     folium.Marker([station['latitude'], station['longitude']],
-        #                   popup=station[self.request.session['meteo_var']]).add_to(m)
+        for station in points:
+            card_points = self.cardinal_points(lat=station['latitude'], lon=station['longitude'])
+            # setup the content of the popup
+            html = '''\
+            <body style="background-color:pink;">
+            <p style="color:red;">Country name: <br><strong>{country}</strong></p>
+            <p>Location coordinates:<br>
+            Latitude: <strong>{lat} {cp_lat}</strong><br>
+            Longitude <strong>{lon} {cp_lon}</strong>
+            </p>
+            <p>{var_name}: <br><strong>{value} [{var_unit}]</strong></p>
+            </body>\
+            '''.format(country=context['selected_country']['name'],
+                       lat=station['latitude'],
+                       cp_lat=card_points['lat'],
+                       lon=station['longitude'],
+                       cp_lon=card_points['lon'],
+                       value=station[self.request.session['meteo_var']],
+                       var_name=var_data['long_name'],
+                       var_unit=var_data['unit'])
+
+            iframe = folium.IFrame(html, width=200, height=200)
+
+            # initialize the popup
+            popup = folium.Popup(iframe)
+
+            # create marker
+            folium.Marker([station['latitude'], station['longitude']],
+                          popup=popup).add_to(m)
 
 
         # Plotly timeseries plot
         #----------------
         #
-        queryset = Location.objects.values('time').annotate(temp=Avg('temp')).order_by()
+
+
+        queryset = Location.objects.filter(geometry__intersects=country_geometry).values('time').annotate(meteo_var=Avg(selected_var)).order_by()
         time = queryset.values_list('time', flat=True)
-        temp = queryset.values_list('temp', flat=True)
+        meteo_var = queryset.values_list('meteo_var', flat=True)
         fig = px.line(
             x=time,
-            y=temp,
+            y=meteo_var,
+            title=f'Average {var_data["long_name"]} [{var_data["unit"]}] in {context["selected_country"]["name"]}',
             width=900,
             height=250,
-            labels={"x": "Date", "y": "Variable"}
+            labels={"x": "Date", "y": var_data['long_name'] + ' [' + var_data['unit'] + ']'},
+            markers=True
         )
+
+        avg = Location.objects.filter(geometry__intersects=country_geometry).values('time').\
+            annotate(meteo_var=Avg(selected_var)).order_by().aggregate(avg=Avg('meteo_var'))['avg']
+
+        fig.add_hline(y=avg, line_width=3, line_dash="dash", line_color="red")
+
+        time = queryset.filter(time=datetime_obj).values_list('time', flat=True)
+        val = queryset.filter(time=datetime_obj).values_list('meteo_var', flat=True)
+
+        fig.add_scatter(
+            x=list(time),
+            y=list(val),
+            marker=dict(size=10, color="red"),
+            name='Selected date'
+        )
+
+
 
         # style the plot
         fig.update_layout(margin=dict(b=30, l=30, r=30, t=30))
 
-        # remove label titles
-        fig.update_layout(yaxis_title=None)
-        fig.update_layout(xaxis_title=None)
+        # # remove label titles
+        # fig.update_layout(yaxis_title=None)
+        # fig.update_layout(xaxis_title=None)
 
 
         fig = fig._repr_html_()  # updated
@@ -132,13 +179,6 @@ class Home(generic.ListView):
         #     # pwat_avg=Avg('pwat')
         # ).order_by()
 
-        context['results'] = Location.objects.values('time').annotate(temp=Avg('temp')).order_by()
-
-        #
-        # context['results'] = results.values('country_iso2').annotate(avg=Avg('temp'))
-
-
-
         # grouped = res.groupby('country_iso2').mean().reset_index()
         #
         # borders_df.set_index('country_iso2', inplace=True)
@@ -174,7 +214,9 @@ class Home(generic.ListView):
 
         #--------------------------------
 
+        X=Location.objects.filter(geometry__intersects=country_geometry).values('time').annotate(meteo_var=Avg(selected_var)).order_by()
 
+        context['results'] = datetime.strftime(datetime_obj, "%d-%m-%Y %H:%M")
 
 
         m = m._repr_html_()  # updated
@@ -193,5 +235,42 @@ class Home(generic.ListView):
         return redirect('/')
 
 
+    def long_name_and_unit(self, var):
+        if var == 'temp':
+            return {'long_name': 'Temperature', 'unit': 'K'}
+        elif var == 'rel_hum':
+            return {'long_name': 'Relative Humidity', 'unit': '%'}
+        elif var == 'spec_hum':
+            return {'long_name': 'Specific Humidity', 'unit': 'kg/kg'}
+        elif var == 'tcc':
+            return {'long_name': 'Total Cloud Cover', 'unit': '%'}
+        elif var == 'u_wind':
+            return {'long_name': 'U-Component of Wind', 'unit': 'm/s'}
+        elif var == 'v_wind':
+            return {'long_name': 'V-Component of Wind', 'unit': 'm/s'}
+        elif var == 'gust':
+            return {'long_name': 'Wind Speed (Gust)', 'unit': 'm/s'}
+        elif var == 'pwat':
+            return {'long_name': 'Precipitable Water', 'unit': 'kg/m^2'}
+
+
+    def cardinal_points(self, lat, lon):
+        card_point_lat = card_point_lon = ''
+
+        if lat > 0 and lat <= 90:
+            card_point_lat = 'N'
+        elif lat < 0 and lat >= -90:
+            card_point_lat = 'S'
+
+        if lon < 0 and lon > -180:
+            card_point_lon = 'W'
+        elif lon > 0 and lon < 180:
+            card_point_lon = 'E'
+
+        return {'lat': card_point_lat, 'lon': card_point_lon}
+
+
+    def kelvin_to_celcius(self, kelvin):
+        return kelvin - 273.15
 
 
