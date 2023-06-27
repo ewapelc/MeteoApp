@@ -1,17 +1,15 @@
 import folium as folium
 import geopandas as gpd
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 from django.shortcuts import redirect
 from django.views import generic
 from django.contrib.gis.geos import Point
 from .models import Location, WorldBorder
-from django.db.models import Subquery, Avg
+from django.db.models import Subquery, Avg, Count, F, OuterRef
+from itertools import chain
 
-from django.shortcuts import render
-from plotly.offline import plot
-from plotly.graph_objs import Scatter
 import plotly.express as px
 
 
@@ -104,8 +102,14 @@ class Home(generic.ListView):
         queryset = Location.objects.filter(geometry__intersects=country_geometry).values('time').annotate(meteo_var=Avg(selected_var)).order_by()
         time = queryset.values_list('time', flat=True)
         meteo_var = queryset.values_list('meteo_var', flat=True)
+
+        timezone_corrected_l = [datetime.strptime(
+            datetime.strftime(TIME + timedelta(hours=2), "%d-%m-%Y %H:%M"),
+            "%d-%m-%Y %H:%M"
+        ) for TIME in time]
+
         fig = px.line(
-            x=time,
+            x=timezone_corrected_l,
             y=meteo_var,
             title=f'Average {var_data["long_name"]} [{var_data["unit"]}] in {context["selected_country"]["name"]}',
             width=900,
@@ -122,14 +126,17 @@ class Home(generic.ListView):
         time = queryset.filter(time=datetime_obj).values_list('time', flat=True)
         val = queryset.filter(time=datetime_obj).values_list('meteo_var', flat=True)
 
-        fig.add_scatter(
-            x=list(time),
-            y=list(val),
-            marker=dict(size=10, color="red"),
-            name='Selected date'
+        timezone_corrected = datetime.strptime(
+            datetime.strftime(time[0] + timedelta(hours=2), "%d-%m-%Y %H:%M"),
+            "%d-%m-%Y %H:%M"
         )
 
-
+        fig.add_scatter(
+            x=[timezone_corrected],
+            y=list(val),
+            marker=dict(size=10, color="red"),
+            name='Selected date',
+        )
 
         # style the plot
         fig.update_layout(margin=dict(b=30, l=30, r=30, t=30))
@@ -137,7 +144,6 @@ class Home(generic.ListView):
         # # remove label titles
         # fig.update_layout(yaxis_title=None)
         # fig.update_layout(xaxis_title=None)
-
 
         fig = fig._repr_html_()  # updated
 
@@ -147,81 +153,104 @@ class Home(generic.ListView):
         # Choropleth
         # ------------------------------------------------------------------
 
-        # Required for Choropleth map
-        borders_df = gpd.GeoDataFrame(WorldBorder.objects.all().values())
-        # # meteo_df = gpd.GeoDataFrame(Location.objects.filter(time=datetime_obj).values())
-        # #
-        borders_df.rename(columns={'mpoly': 'geometry', 'iso2': 'country_iso2'}, inplace=True)
-        borders_df.drop(columns=['id'], inplace=True)
-        # meteo_df.drop(columns=['id'], inplace=True)
+        # initialize blank folium map
+        m = folium.Map([selected_country['lat'], selected_country['lon']], zoom_start=7)
 
-        # Later - change into postgis function on Query results
-        # sjoin_res = gpd.sjoin(meteo_df, borders_df, how="left", predicate="intersects")
-        # res = sjoin_res[['latitude', 'longitude', 'time', 'step', 'atmosphereSingleLayer',
-        #                  'valid_time', 'temp', 'rel_hum', 'tcc', 'spec_hum', 'u_wind', 'v_wind',
-        #                  'gust', 'pwat', 'geometry', 'ISO2']]
+        # get data
+        world = list(WorldBorder.objects.values('iso2', geometry=F('mpoly')))
 
-        # results = Location.objects.filter(time=datetime_obj).annotate(
-        #     country_iso2=Subquery(
-        #         WorldBorder.objects.filter(
-        #             mpoly__contains=OuterRef('geometry')
-        #         ).values('iso2')
-        #     )
-        # )
-        # ).values('country_iso2').annotate(
-        #     temp_avg=Avg('temp')
-        #     # rel_hum_avg=Avg('rel_hum'),
-        #     # spec_hum_avg=Avg('spec_hum'),
-        #     # tcc_avg=Avg('tcc'),
-        #     # u_wind_avg=Avg('u_wind'),
-        #     # v_wind_avg=Avg('v_wind'),
-        #     # gust_avg=Avg('gust'),
-        #     # pwat_avg=Avg('pwat')
-        # ).order_by()
+        iso2_codes = list(WorldBorder.objects.order_by('iso2').values_list('iso2', flat=True))
+        data = [self.get_avg_by_country(datetime_obj=datetime_obj, country_iso2=ISO2_CODE) for ISO2_CODE in iso2_codes]
 
-        # grouped = res.groupby('country_iso2').mean().reset_index()
+        # transform data
+        world_gdf = gpd.GeoDataFrame(world, crs='EPSG:4326')
+        wkt1 = world_gdf.geometry.apply(lambda x: x.wkt)
+        world_gdf = gpd.GeoDataFrame(world_gdf, geometry=gpd.GeoSeries.from_wkt(wkt1), crs='EPSG:4326')
+
+        data_df = pd.DataFrame(data)
+        data_df.dropna(axis=0, inplace=True)
+        wkt2 = data_df.geometry.apply(lambda x: x.wkt)
+        data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
+
+        # initialize choropleth maps
+        self.create_choropleth(map=m, variable='temp', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='viridis')
+        self.create_choropleth(map=m, variable='rel_hum', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Blues')
+        self.create_choropleth(map=m, variable='spec_hum', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Reds')
+        self.create_choropleth(map=m, variable='tcc', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Oranges')
+        self.create_choropleth(map=m, variable='pwat', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Greens')
+        self.create_choropleth(map=m, variable='u_wind', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='PuRd')
+        self.create_choropleth(map=m, variable='v_wind', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='OrRd')
+        self.create_choropleth(map=m, variable='gust', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='GnBu')
+
+        temp_data = self.long_name_and_unit('temp')
+        rel_hum_data = self.long_name_and_unit('rel_hum')
+        spec_hum_data = self.long_name_and_unit('spec_hum')
+        tcc_data = self.long_name_and_unit('tcc')
+        pwat_data = self.long_name_and_unit('pwat')
+        u_wind_data = self.long_name_and_unit('u_wind')
+        v_wind_data = self.long_name_and_unit('v_wind')
+        gust_data = self.long_name_and_unit('gust')
+
+        # add popups
+        geojson = folium.features.GeoJson(
+            data=data_gdf,
+            name='Temperature',
+            smooth_factor=2,
+            style_function=lambda x: {'color': 'black', 'fillColor': 'transparent', 'weight': 0.5},
+            tooltip=folium.features.GeoJsonTooltip(
+                fields=['country_name',
+                        'iso2',
+                        'temp_avg',
+                        'rel_hum_avg',
+                        'spec_hum_avg',
+                        'tcc_avg',
+                        'pwat_avg',
+                        'u_wind_avg',
+                        'v_wind_avg',
+                        'gust_avg'],
+                aliases=['Country:',
+                         'Country code:',
+                         f"{temp_data['long_name']} [{temp_data['unit']}] ",
+                         f"{rel_hum_data['long_name']} [{rel_hum_data['unit']}] ",
+                         f"{spec_hum_data['long_name']} [{spec_hum_data['unit']}] ",
+                         f"{tcc_data['long_name']} [{tcc_data['unit']}] ",
+                         f"{pwat_data['long_name']} [{pwat_data['unit']}] ",
+                         f"{u_wind_data['long_name']} [{u_wind_data['unit']}] ",
+                         f"{v_wind_data['long_name']} [{v_wind_data['unit']}] ",
+                         f"{gust_data['long_name']} [{gust_data['unit']}] ", ],
+                localize=True,
+                sticky=False,
+                labels=True,
+                style="""
+                               background-color: #F0EFEF;
+                               border: 2px solid black;
+                               border-radius: 3px;
+                               box-shadow: 3px;
+                           """,
+                max_width=800, ),
+            highlight_function=lambda x: {'weight': 3, 'fillColor': 'grey'},
+        ).add_to(m)
+        #----------------------------------------------------
+
+
+        folium.LayerControl().add_to(m)
+
+
+
+        # X=Location.objects.filter(geometry__intersects=country_geometry).values('time').annotate(meteo_var=Avg(selected_var)).order_by()
         #
-        # borders_df.set_index('country_iso2', inplace=True)
-        # geo_json = gpd.GeoSeries(data=borders_df['geometry']).__geo_interface__
+        # # WAZNE
+        # data = Location.objects.filter(time=datetime_obj).annotate(\
+        #         iso2=Subquery(\
+        #             WorldBorder.objects.filter(mpoly__contains=OuterRef('geometry')).values('iso2'))
+        #     ).values('iso2').annotate(avg=Avg('temp')).order_by().values('iso2', 'avg')
         #
-        # folium.Choropleth(
-        #     name="temp",
-        #     geo_data=geo_json,
-        #     data=grouped,
-        #     columns=["ISO2", "temp"],
-        #     key_on="feature.id",
-        #     fill_color="YlGn",
-        #     fill_opacity=0.7,
-        #     line_opacity=0.2,
-        #     legend_name="Temperature"
-        # ).add_to(m)
-        #
-        # folium.Choropleth(
-        #     name="rel_hum",
-        #     geo_data=geo_json,
-        #     data=grouped,
-        #     columns=["ISO2", "rel_hum"],
-        #     key_on="feature.id",
-        #     fill_color="Blues",
-        #     fill_opacity=0.7,
-        #     line_opacity=0.2,
-        #     legend_name="Rel hum"
-        # ).add_to(m)
-        #
-        # folium.LayerControl().add_to(m)
+        # context['results'] = world
 
 
 
-        #--------------------------------
-
-        X=Location.objects.filter(geometry__intersects=country_geometry).values('time').annotate(meteo_var=Avg(selected_var)).order_by()
-
-        context['results'] = datetime.strftime(datetime_obj, "%d-%m-%Y %H:%M")
-
-
-        m = m._repr_html_()  # updated
+        m = m._repr_html_()
         context['map'] = m
-        #-------
 
 
         return context
@@ -272,5 +301,40 @@ class Home(generic.ListView):
 
     def kelvin_to_celcius(self, kelvin):
         return kelvin - 273.15
+
+
+    def get_avg_by_country(self, country_iso2, datetime_obj):
+        country = WorldBorder.objects.filter(iso2=country_iso2).values('mpoly', 'iso2', 'name')[0]
+        data = Location.objects.filter(time=datetime_obj, geometry__intersects=country['mpoly']).aggregate(\
+            temp_avg=Avg('temp'),
+            rel_hum_avg=Avg('rel_hum'),
+            spec_hum_avg=Avg('spec_hum'),
+            tcc_avg=Avg('tcc'),
+            u_wind_avg=Avg('u_wind'),
+            v_wind_avg=Avg('v_wind'),
+            gust_avg=Avg('gust'),
+            pwat_avg=Avg('pwat')
+        )
+        data['iso2'] = country['iso2']
+        data['country_name'] = country['name']
+        data['geometry'] = country['mpoly']
+
+        return data
+
+    def create_choropleth(self, map, variable, datetime_obj, geo_data, data, color_palette):
+        var_data = self.long_name_and_unit(variable)
+
+        choropleth = folium.Choropleth(
+            name=f"{var_data['long_name']}",
+            geo_data=geo_data,
+            data=data,
+            columns=["iso2", f"{variable}_avg"],
+            key_on="feature.properties.iso2",
+            fill_color=color_palette,
+            fill_opacity=0.7,
+            line_opacity=0.2,
+            legend_name=f"Average {var_data['long_name']} [{var_data['unit']}] on {datetime_obj}"
+        ).add_to(map)
+
 
 
