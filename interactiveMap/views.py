@@ -38,6 +38,21 @@ class Home(generic.ListView):
 
         if 'date' not in self.request.session:
             self.request.session['date'] = 0
+
+        if 'visual_type' not in self.request.session:
+            self.request.session['visual_type'] = 'points'
+
+        if self.request.session['country'] == '':
+            self.request.session['country'] = 10
+
+        if self.request.session['meteo_var'] == '':
+            self.request.session['meteo_var'] = 'temp'
+
+        if self.request.session['date'] == '':
+            self.request.session['date'] = 0
+
+        if self.request.session['visual_type'] == '':
+            self.request.session['visual_type'] = 'points'
         #
 
         selected_country = WorldBorder.objects.filter(id=self.request.session['country']).values().last()
@@ -60,46 +75,14 @@ class Home(generic.ListView):
         var_data = self.long_name_and_unit(selected_var)
 
 
-        #------------
-        m = folium.Map([selected_country['lat'], selected_country['lon']], zoom_start=7)
-
-        for station in points:
-            card_points = self.cardinal_points(lat=station['latitude'], lon=station['longitude'])
-            # setup the content of the popup
-            html = '''\
-            <body style="background-color:pink;">
-            <p style="color:red;">Country name: <br><strong>{country}</strong></p>
-            <p>Location coordinates:<br>
-            Latitude: <strong>{lat} {cp_lat}</strong><br>
-            Longitude <strong>{lon} {cp_lon}</strong>
-            </p>
-            <p>{var_name}: <br><strong>{value} [{var_unit}]</strong></p>
-            </body>\
-            '''.format(country=context['selected_country']['name'],
-                       lat=station['latitude'],
-                       cp_lat=card_points['lat'],
-                       lon=station['longitude'],
-                       cp_lon=card_points['lon'],
-                       value=station[self.request.session['meteo_var']],
-                       var_name=var_data['long_name'],
-                       var_unit=var_data['unit'])
-
-            iframe = folium.IFrame(html, width=200, height=200)
-
-            # initialize the popup
-            popup = folium.Popup(iframe)
-
-            # create marker
-            folium.Marker([station['latitude'], station['longitude']],
-                          popup=popup).add_to(m)
 
 
         # Plotly timeseries plot
-        #----------------
+        # ----------------
         #
 
-
-        queryset = Location.objects.filter(geometry__intersects=country_geometry).values('time').annotate(meteo_var=Avg(selected_var)).order_by()
+        queryset = Location.objects.filter(geometry__intersects=country_geometry).values('time').annotate(
+            meteo_var=Avg(selected_var)).order_by()
         time = queryset.values_list('time', flat=True)
         meteo_var = queryset.values_list('meteo_var', flat=True)
 
@@ -118,7 +101,7 @@ class Home(generic.ListView):
             markers=True
         )
 
-        avg = Location.objects.filter(geometry__intersects=country_geometry).values('time').\
+        avg = Location.objects.filter(geometry__intersects=country_geometry).values('time'). \
             annotate(meteo_var=Avg(selected_var)).order_by().aggregate(avg=Avg('meteo_var'))['avg']
 
         fig.add_hline(y=avg, line_width=3, line_dash="dash", line_color="red")
@@ -149,104 +132,22 @@ class Home(generic.ListView):
 
         context['plot_div'] = fig
 
-
-        # Choropleth
-        # ------------------------------------------------------------------
-
         # initialize blank folium map
         m = folium.Map([selected_country['lat'], selected_country['lon']], zoom_start=7)
 
-        # get data
-        world = list(WorldBorder.objects.values('iso2', geometry=F('mpoly')))
-
-        iso2_codes = list(WorldBorder.objects.order_by('iso2').values_list('iso2', flat=True))
-        data = [self.get_avg_by_country(datetime_obj=datetime_obj, country_iso2=ISO2_CODE) for ISO2_CODE in iso2_codes]
-
-        # transform data
-        world_gdf = gpd.GeoDataFrame(world, crs='EPSG:4326')
-        wkt1 = world_gdf.geometry.apply(lambda x: x.wkt)
-        world_gdf = gpd.GeoDataFrame(world_gdf, geometry=gpd.GeoSeries.from_wkt(wkt1), crs='EPSG:4326')
-
-        data_df = pd.DataFrame(data)
-        data_df.dropna(axis=0, inplace=True)
-        wkt2 = data_df.geometry.apply(lambda x: x.wkt)
-        data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
-
-        # initialize choropleth maps
-        self.create_choropleth(map=m, variable='temp', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='viridis')
-        self.create_choropleth(map=m, variable='rel_hum', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Blues')
-        self.create_choropleth(map=m, variable='spec_hum', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Reds')
-        self.create_choropleth(map=m, variable='tcc', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Oranges')
-        self.create_choropleth(map=m, variable='pwat', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Greens')
-        self.create_choropleth(map=m, variable='u_wind', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='PuRd')
-        self.create_choropleth(map=m, variable='v_wind', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='OrRd')
-        self.create_choropleth(map=m, variable='gust', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='GnBu')
-
-        temp_data = self.long_name_and_unit('temp')
-        rel_hum_data = self.long_name_and_unit('rel_hum')
-        spec_hum_data = self.long_name_and_unit('spec_hum')
-        tcc_data = self.long_name_and_unit('tcc')
-        pwat_data = self.long_name_and_unit('pwat')
-        u_wind_data = self.long_name_and_unit('u_wind')
-        v_wind_data = self.long_name_and_unit('v_wind')
-        gust_data = self.long_name_and_unit('gust')
-
-        # add popups
-        geojson = folium.features.GeoJson(
-            data=data_gdf,
-            name='Temperature',
-            smooth_factor=2,
-            style_function=lambda x: {'color': 'black', 'fillColor': 'transparent', 'weight': 0.5},
-            tooltip=folium.features.GeoJsonTooltip(
-                fields=['country_name',
-                        'iso2',
-                        'temp_avg',
-                        'rel_hum_avg',
-                        'spec_hum_avg',
-                        'tcc_avg',
-                        'pwat_avg',
-                        'u_wind_avg',
-                        'v_wind_avg',
-                        'gust_avg'],
-                aliases=['Country:',
-                         'Country code:',
-                         f"{temp_data['long_name']} [{temp_data['unit']}] ",
-                         f"{rel_hum_data['long_name']} [{rel_hum_data['unit']}] ",
-                         f"{spec_hum_data['long_name']} [{spec_hum_data['unit']}] ",
-                         f"{tcc_data['long_name']} [{tcc_data['unit']}] ",
-                         f"{pwat_data['long_name']} [{pwat_data['unit']}] ",
-                         f"{u_wind_data['long_name']} [{u_wind_data['unit']}] ",
-                         f"{v_wind_data['long_name']} [{v_wind_data['unit']}] ",
-                         f"{gust_data['long_name']} [{gust_data['unit']}] ", ],
-                localize=True,
-                sticky=False,
-                labels=True,
-                style="""
-                               background-color: #F0EFEF;
-                               border: 2px solid black;
-                               border-radius: 3px;
-                               box-shadow: 3px;
-                           """,
-                max_width=800, ),
-            highlight_function=lambda x: {'weight': 3, 'fillColor': 'grey'},
-        ).add_to(m)
-        #----------------------------------------------------
-
+        folium.raster_layers.TileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png?api_key=e379e366-57a6-4682-ad6f-2f1a779548b2',
+                                       name='Stadia.AlidadeSmoothDark',
+                                       attr='Stadia.AlidadeSmoothDark').add_to(m)
+        folium.raster_layers.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                                       name='Esri.WorldImagery',
+                                       attr='Esri.WorldImagery').add_to(m)
 
         folium.LayerControl().add_to(m)
 
-
-
-        # X=Location.objects.filter(geometry__intersects=country_geometry).values('time').annotate(meteo_var=Avg(selected_var)).order_by()
-        #
-        # # WAZNE
-        # data = Location.objects.filter(time=datetime_obj).annotate(\
-        #         iso2=Subquery(\
-        #             WorldBorder.objects.filter(mpoly__contains=OuterRef('geometry')).values('iso2'))
-        #     ).values('iso2').annotate(avg=Avg('temp')).order_by().values('iso2', 'avg')
-        #
-        # context['results'] = world
-
+        if self.request.session['visual_type'] == 'points':
+            self.render_points(map=m, points=points, context=context, selected_country=selected_country, selected_var=selected_var)
+        elif self.request.session['visual_type'] == 'choropleth':
+            self.render_choropleth(m=m, datetime_obj=datetime_obj)
 
 
         m = m._repr_html_()
@@ -258,6 +159,7 @@ class Home(generic.ListView):
 
 
     def post(self, request, *args, **kwargs):
+        request.session['visual_type'] = request.POST.get('visual_type')
         request.session['country'] = request.POST.get('country')
         request.session['date'] = request.POST.get('date')
         request.session['meteo_var'] = request.POST.get('meteo_var')
@@ -335,6 +237,145 @@ class Home(generic.ListView):
             line_opacity=0.2,
             legend_name=f"Average {var_data['long_name']} [{var_data['unit']}] on {datetime_obj}"
         ).add_to(map)
+
+    def render_points(self, map, points, context, selected_country, selected_var):
+        var_data = self.long_name_and_unit(selected_var)
+
+        for station in points:
+            card_points = self.cardinal_points(lat=station['latitude'], lon=station['longitude'])
+            # setup the content of the popup
+            html = '''\
+            <body style="background-color:pink;">
+            <p style="color:red;">Country name: <br><strong>{country}</strong></p>
+            <p>Location coordinates:<br>
+            Latitude: <strong>{lat} {cp_lat}</strong><br>
+            Longitude <strong>{lon} {cp_lon}</strong>
+            </p>
+            <p>{var_name}: <br><strong>{value} [{var_unit}]</strong></p>
+            </body>\
+            '''.format(country=context['selected_country']['name'],
+                       lat=station['latitude'],
+                       cp_lat=card_points['lat'],
+                       lon=station['longitude'],
+                       cp_lon=card_points['lon'],
+                       value=station[self.request.session['meteo_var']],
+                       var_name=var_data['long_name'],
+                       var_unit=var_data['unit'])
+
+            iframe = folium.IFrame(html, width=200, height=200)
+
+            # initialize the popup
+            popup = folium.Popup(iframe)
+
+            # create marker
+            folium.Marker([station['latitude'], station['longitude']],
+                          popup=popup
+                          ).add_to(map)
+
+    def render_choropleth(self, m, datetime_obj):
+        # # get data
+        # world = list(WorldBorder.objects.values('iso2', geometry=F('mpoly')))
+        #
+        iso2_codes = list(WorldBorder.objects.order_by('iso2').values_list('iso2', flat=True))
+        data = [self.get_avg_by_country(datetime_obj=datetime_obj, country_iso2=ISO2_CODE) for ISO2_CODE in iso2_codes]
+
+        # # transform data
+        # world_gdf = gpd.GeoDataFrame(world, crs='EPSG:4326')
+        # wkt1 = world_gdf.geometry.apply(lambda x: x.wkt)
+        # world_gdf = gpd.GeoDataFrame(world_gdf, geometry=gpd.GeoSeries.from_wkt(wkt1), crs='EPSG:4326')
+
+        data_df = pd.DataFrame(data)
+        data_df.dropna(axis=0, inplace=True)
+        wkt2 = data_df.geometry.apply(lambda x: x.wkt)
+        data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
+        #
+        # # initialize choropleth maps
+        # self.create_choropleth(map=m, variable='temp', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='viridis')
+        # self.create_choropleth(map=m, variable='rel_hum', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Blues')
+        # self.create_choropleth(map=m, variable='spec_hum', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Reds')
+        # self.create_choropleth(map=m, variable='tcc', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Oranges')
+        # self.create_choropleth(map=m, variable='pwat', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Greens')
+        # self.create_choropleth(map=m, variable='u_wind', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='PuRd')
+        # self.create_choropleth(map=m, variable='v_wind', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='OrRd')
+        # self.create_choropleth(map=m, variable='gust', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='GnBu')
+
+        temp_data = self.long_name_and_unit('temp')
+        # rel_hum_data = self.long_name_and_unit('rel_hum')
+        # spec_hum_data = self.long_name_and_unit('spec_hum')
+        # tcc_data = self.long_name_and_unit('tcc')
+        # pwat_data = self.long_name_and_unit('pwat')
+        # u_wind_data = self.long_name_and_unit('u_wind')
+        # v_wind_data = self.long_name_and_unit('v_wind')
+        # gust_data = self.long_name_and_unit('gust')
+
+        # # add popups
+        # geojson1 = folium.features.GeoJson(
+        #     data=data_gdf,
+        #     name='Temperature',
+        #     smooth_factor=2,
+        #     style_function=lambda x: {'color': 'black', 'fillColor': 'transparent', 'weight': 0.5},
+        #     tooltip=folium.features.GeoJsonTooltip(
+        #         fields=['country_name',
+        #                 'iso2',
+        #                 'temp_avg',
+        #                 'rel_hum_avg',
+        #                 'spec_hum_avg',
+        #                 'tcc_avg',
+        #                 'pwat_avg',
+        #                 'u_wind_avg',
+        #                 'v_wind_avg',
+        #                 'gust_avg'],
+        #         aliases=['Country:',
+        #                  'Country code:',
+        #                  f"{temp_data['long_name']} [{temp_data['unit']}] ",
+        #                  f"{rel_hum_data['long_name']} [{rel_hum_data['unit']}] ",
+        #                  f"{spec_hum_data['long_name']} [{spec_hum_data['unit']}] ",
+        #                  f"{tcc_data['long_name']} [{tcc_data['unit']}] ",
+        #                  f"{pwat_data['long_name']} [{pwat_data['unit']}] ",
+        #                  f"{u_wind_data['long_name']} [{u_wind_data['unit']}] ",
+        #                  f"{v_wind_data['long_name']} [{v_wind_data['unit']}] ",
+        #                  f"{gust_data['long_name']} [{gust_data['unit']}] ", ],
+        #         localize=True,
+        #         sticky=False,
+        #         labels=True,
+        #         style="""
+        #                        background-color: #F0EFEF;
+        #                        border: 2px solid black;
+        #                        border-radius: 3px;
+        #                        box-shadow: 3px;
+        #                    """,
+        #         max_width=800, ),
+        #     highlight_function=lambda x: {'weight': 3, 'fillColor': 'grey'},
+        # ).add_to(m)
+
+        # add popups
+        geojson2 = folium.features.GeoJson(
+            data=data_gdf,
+            name='Temperature',
+            smooth_factor=2,
+            style_function=lambda x: {'color': 'black', 'fillColor': 'transparent', 'weight': 0.5},
+            tooltip=folium.features.GeoJsonTooltip(
+                fields=['country_name',
+                        'iso2',
+                        'temp_avg',],
+                aliases=['Country:',
+                         'Country code:',
+                         f"{temp_data['long_name']} [{temp_data['unit']}] ",],
+                localize=True,
+                sticky=False,
+                labels=True,
+                style="""
+                                       background-color: #F0EFEF;
+                                       border: 2px solid black;
+                                       border-radius: 3px;
+                                       box-shadow: 3px;
+                                   """,
+                max_width=800, ),
+            highlight_function=lambda x: {'weight': 3, 'fillColor': 'grey'},
+        ).add_to(m)
+
+        folium.LayerControl().add_to(m)
+
 
 
 

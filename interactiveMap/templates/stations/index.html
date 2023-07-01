@@ -60,10 +60,10 @@
                 <div>
                    {% if selected_country %}
                         <p>{{ selected_country.name }}, {{ request.session.date }}, {{ request.session.meteo_var }},
-                        {{ count }},</p>
+                        {{ count }}, {{ request.session.visual_type }}</p>
                     {% endif %}
 
-                                    <span>{{ results }}</span>
+<!--                                    <span>{{ results }}</span>-->
                 </div>
                 <hr>
 
@@ -73,8 +73,19 @@
                         {% csrf_token %}
 
                         <div class="user-input">
+                            <label for="visual_type">Select type of visualization</label>
+                            <select id="visual_type" name="visual_type" required>
+                                <option selected disabled style="display:none;" value="">Select...</option>
+                                <option value="points">Points</option>
+                                <option value="choropleth">Choropleth</option>
+                            </select>
+                        </div>
+                        <hr>
+
+                        <div class="user-input">
                             <label for="country">Select country</label>
-                            <select id="country" name="country">
+                            <select id="country" name="country" required>
+                                <option selected disabled style="display:none;" value="">Select...</option>
                                 {% if countries %}
                                     {% for country in countries %}
                                         <option value="{{ country.id }}">{{ country.name }}</option>
@@ -86,7 +97,8 @@
 
                         <div class="user-input">
                             <label for="date">Select date</label>
-                            <select id="date" name="date">
+                            <select id="date" name="date" required>
+                                <option selected disabled style="display:none;" value="">Select...</option>
                                 {% if times %}
                                     {% for time in times %}
                                         <option value="{{ time.time|date:'d-m-Y H:i' }}">{{ time.time|date:"d-m-Y H:i" }}</option>
@@ -97,9 +109,9 @@
                         <hr>
 
                         <div id="form-meteo" class="user-input meteo">
-                            <p>Meteorological variable:</p>
+                            <p>Select variable:</p>
 
-                            <input type="radio" id="temp" name="meteo_var" value="temp" checked>
+                            <input type="radio" id="temp" name="meteo_var" value="temp" required>
                             <label for="temp">Temperature</label><br>
 
                             <input type="radio" id="rel_hum" name="meteo_var" value="rel_hum">
