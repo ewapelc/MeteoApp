@@ -19,5 +19,10 @@ from interactiveMap import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.Home.as_view(), name='map')
+    path('', views.home, name='home'),
+    path('map/', views.InteractiveMap.as_view(), name='map'),
+    path('analysis/', views.getting_started, name='analysis_page'),
+    path('analysis/timeseries/', views.timeseries, name='timeseries'),
+    path('analysis/interpolation/', views.interpolation, name='interpolation'),
+    path('analysis/animation/', views.animation, name='animation'),
 ]
