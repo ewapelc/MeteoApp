@@ -8,20 +8,21 @@
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet">
 
+<!--        &lt;!&ndash;Leaflet CSS&ndash;&gt;-->
+<!--        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"-->
+<!--     integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="-->
+<!--     crossorigin=""/>-->
+
+
         <!--Custom CSS-->
         {% load static %}
         <link rel="stylesheet" href="{% static 'map_page.css' %}">
 
-        <!--Leaflet CSS-->
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
-     integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
-     crossorigin=""/>
-
-        <!--Leaflet JS-->
-        <!-- Make sure you put this AFTER Leaflet's CSS -->
- <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
-     integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
-     crossorigin=""></script>
+<!--        &lt;!&ndash;Leaflet JS&ndash;&gt;-->
+<!--        &lt;!&ndash; Make sure you put this AFTER Leaflet's CSS &ndash;&gt;-->
+<!-- <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"-->
+<!--     integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="-->
+<!--     crossorigin=""></script>-->
 
         <!--Set map height-->
         <style>
@@ -30,12 +31,11 @@
         </style>
     </head>
 <body>
-{% include 'stations/navbar.html' %}
-
+{% include 'stations/navbar_map.html' %}
 
 
     <div class="wrapper side-panel-open">
-        <div class="folium_map">
+        <div class="folium_map" style="margin-left: 50px;">
             {{ map|safe }}
         </div>
 
@@ -74,7 +74,7 @@
                         {% csrf_token %}
 
                         <div class="user-input">
-                            <label for="visual_type">Select type of visualization</label>
+                            <label for="visual_type">Visualization method</label>
                             <select id="visual_type" name="visual_type" required>
                                 <option selected disabled style="display:none;" value="">Select...</option>
                                 <option value="points">Points</option>
@@ -84,7 +84,7 @@
                         <hr>
 
                         <div class="user-input">
-                            <label for="country">Select country</label>
+                            <label for="country">Country</label>
                             <select id="country" name="country" required>
                                 <option selected disabled style="display:none;" value="">Select...</option>
                                 {% if countries %}
@@ -97,7 +97,7 @@
                         <hr>
 
                         <div class="user-input">
-                            <label for="date">Select date</label>
+                            <label for="date">Date</label>
                             <select id="date" name="date" required>
                                 <option selected disabled style="display:none;" value="">Select...</option>
                                 {% if times %}
@@ -110,7 +110,7 @@
                         <hr>
 
                         <div id="form-meteo" class="user-input meteo">
-                            <p>Select variable:</p>
+                            <p>Variable:</p>
 
                             <input type="radio" id="temp" name="meteo_var" value="temp" required>
                             <label for="temp">Temperature</label><br>

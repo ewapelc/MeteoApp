@@ -1,9 +1,28 @@
-<h1>This is a placeholder for the Home page</h1>
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>MeteoApp</title>
 
-<div style="border-style: solid; margin: 50px; padding: 50px;">
-    <a href="/map">Interactive map</a>
-</div>
+        <!--Google icons-->
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet">
 
-<div style="border-style: solid; margin: 50px; padding: 50px;">
-    <a href="/analysis">Analysis page</a>
-</div>
+        <!--Custom CSS-->
+        {% load static %}
+        <link rel="stylesheet" href="{% static 'home.css' %}">
+    </head>
+<body>
+{% include 'stations/navbar.html' %}
+
+    <h1>This is a placeholder for the Home page</h1>
+
+    <div style="border-style: solid; margin: 50px; padding: 50px;">
+        <a href="/map">Interactive map</a>
+    </div>
+
+    <div style="border-style: solid; margin: 50px; padding: 50px;">
+        <a href="/analysis">Analysis page</a>
+    </div>
+
+</body>

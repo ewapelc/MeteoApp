@@ -1,0 +1,64 @@
+<!--<!DOCTYPE html>-->
+<!--&lt;!&ndash; Created by CodingLab |www.youtube.com/CodingLabYT&ndash;&gt;-->
+<!--<html lang="en" dir="ltr">-->
+<!--  <head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <title> Responsive Sidebar Menu  | CodingLab </title>-->
+
+      {% load static %}
+<link rel="stylesheet" href="{% static 'navbar_map.css' %}">
+
+    <!-- Boxicons CDN Link -->
+    <link href='https://unpkg.com/boxicons@2.0.7/css/boxicons.min.css' rel='stylesheet'>
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--   </head>-->
+<body>
+  <div class="navbar">
+    <div class="logo-details">
+        <i class='bx bx-menu' id="btn" ></i>
+    </div>
+    <ul class="nav-list">
+      <li>
+        <a href="/">
+          <i class='bx bx-home'></i>
+          <span class="links_name">Home</span>
+        </a>
+         <span class="tooltip">Home</span>
+      </li>
+      <li>
+       <a href="/map">
+         <i class='bx bx-map' ></i>
+         <span class="links_name">Map</span>
+       </a>
+       <span class="tooltip">Map</span>
+     </li>
+     <li>
+       <a href="/analysis">
+         <i class='bx bx-line-chart' ></i>
+         <span class="links_name">Analysis</span>
+       </a>
+       <span class="tooltip">Analysis</span>
+     </li>
+    </ul>
+  </div>
+
+  <script>
+  let navbar = document.querySelector(".navbar");
+  let closeBtn = document.querySelector("#btn");
+
+  closeBtn.addEventListener("click", ()=>{
+    navbar.classList.toggle("open");
+    menuBtnChange();//calling the function(optional)
+  });
+
+  // following are the code to change sidebar button(optional)
+  function menuBtnChange() {
+   if(navbar.classList.contains("open")){
+     closeBtn.classList.replace("bx-menu", "bx-x");//replacing the iocns class
+   }else {
+     closeBtn.classList.replace("bx-x","bx-menu");//replacing the iocns class
+   }
+  }
+  </script>
+</body>
+<!--</html>-->

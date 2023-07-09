@@ -1,9 +1,16 @@
 /* Side panel: https://codepen.io/dcode-software/pen/OJxEWWz  */
-
+/* Google Font Link */
+/*
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap');
+*{
+  font-family: "Poppins" , sans-serif;
+}
+*/
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap');
 body {
     background-color: white;
     margin: 0;
-    font-family: sans-serif;
+    font-family: "Poppins" , sans-serif;
     line-height: 1.5;
     overflow: hidden;
 }
@@ -71,7 +78,6 @@ body {
 
 .side-panel-open .side-panel {
     display: initial;
-
 }
 
 .side-panel-open .sp-icon-open {
@@ -85,9 +91,11 @@ body {
 
 /*---------------------------------*/
 
+/*
 select  {
     width: 250px;
 }
+*/
 
 #form-meteo input {
     float: left;
