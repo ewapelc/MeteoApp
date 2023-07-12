@@ -10,7 +10,7 @@
 /*comment background-color*/
 .wrapper {
     margin: 150px 200px;
-    background-color: #D3D3D3;
+    /*background-color: #D3D3D3;*/
 }
 
 h1 {
@@ -23,10 +23,17 @@ h1 {
 }
 
 /*comment this*/
-.content, .menu {
+
+.menu {
   border: 3px solid black;
+  border-radius: 15px;
+  border-width: 1px;
+  border-color: rgba(0, 0, 0, 0.2);
+  /*background-color: #fff;*/
+}
+
+.content, .menu {
   padding: 15px;
-  background-color: #fff;
 }
 
 .content {
@@ -36,8 +43,8 @@ h1 {
 }
 
 .menu {
-  width: 20%;
-  height: 25vh;
+  width: 17%;
+  height: 30vh;
 }
 
 
@@ -45,4 +52,19 @@ h1 {
   position: -webkit-sticky;
   position: sticky;
   top: 0;
+}
+
+.menu ul a {
+  display: block;
+  text-decoration: none;
+  color: #000;
+  font-size: 16px;
+  margin: 0 0 1em .5em;
+  padding: 4px 8px;
+}
+
+.menu ul a:hover {
+    background-color: rgba(0,138,230, 0.1);
+    border-radius: 4px;
+    color: blue;
 }

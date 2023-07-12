@@ -9,7 +9,7 @@
 
         <!--Custom CSS-->
         {% load static %}
-        <link rel="stylesheet" href="{% static 'analysis_page.css' %}">
+        <link rel="stylesheet" href="{% static 'analysis_page1.css' %}">
     </head>
 <body>
 {% include 'stations/navbar.html' %}
@@ -18,10 +18,10 @@
 
     <div class="menu">
         <ul>
-          <li><a href="/analysis">Getting Started</a></li>
-          <li><a href="/analysis/timeseries">Timeseries</a></li>
-          <li><a href="/analysis/interpolation">Interpolation</a></li>
-          <li><a href="/analysis/animation">Animation</a></li>
+          <a href="/analysis">Getting Started</a>
+          <a href="/analysis/timeseries">Timeseries</a>
+          <a href="/analysis/interpolation">Interpolation</a>
+          <a href="/analysis/animation">Animation</a>
         </ul>
     </div>
 

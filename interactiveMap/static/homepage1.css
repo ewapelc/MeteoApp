@@ -6,3 +6,13 @@
   box-sizing: border-box;
   scroll-behavior: smooth;
 }
+
+section {
+    display: grid;
+    place-content: center;
+    min-height: 100vh;
+}
+
+#map {
+    background-color: rgb(230, 230, 255);
+}

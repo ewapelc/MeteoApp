@@ -9,18 +9,22 @@
 
         <!--Custom CSS-->
         {% load static %}
-        <link rel="stylesheet" href="{% static 'homepage.css' %}">
+        <link rel="stylesheet" href="{% static 'homepage1.css' %}">
     </head>
 <body>
 {% include 'stations/navbar.html' %}
 
-    <div>
-        <a href="/map">Interactive map</a>
-    </div>
-
-    <div>
-        <a href="/analysis">Analysis page</a>
-    </div>
+    <section id="about">
+        <h1>About project</h1>
+    </section>
+    <section id="map">
+        <h1>Interactive map</h1>
+        <a href="/map">Go to Map</a>
+    </section>
+    <section id="analysis">
+        <h1>Analysis Page</h1>
+        <a href="/analysis">Go to Analysis page</a>
+    </section>
 
 </body>
 </html>
