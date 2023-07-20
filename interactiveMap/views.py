@@ -376,13 +376,141 @@ def getting_started(request):
     return render(request, 'analysis_page/getting_started.html')
 
 def timeseries(request):
-    return render(request, 'analysis_page/timeseries.html')
+    context = {
+        'countries': WorldBorder.objects.all().order_by('name'),
+        'variables': ['temp', 'rel_hum', 'tcc', 'spec_hum', 'u_wind', 'v_wind', 'gust', 'pwat']
+    }
+
+    if request.method == 'POST':
+        context['chosen_countries'] = WorldBorder.objects.filter(id__in=request.POST.getlist('country[]')).values()
+        context['chosen_var'] = request.POST.get('variable')
+
+
+        # plot 1 - multiple countries
+        var_data = long_name_and_unit(context['chosen_var'])
+
+        meteo_vars = []
+        i = 0
+        time = 0
+        for country in context['chosen_countries']:
+            if i == 0:
+                res = extract_var(country=country, meteo_variable=context['chosen_var'])
+                time = res['time']
+                meteo_var = res['meteo_var']
+            else:
+                meteo_var = extract_var(country=country, meteo_variable=context['chosen_var'])['meteo_var']
+            meteo_vars.append(meteo_var)
+
+        timezone_corrected_l = [datetime.strptime(
+            datetime.strftime(TIME + timedelta(hours=2), "%d-%m-%Y %H:%M"),
+            "%d-%m-%Y %H:%M"
+        ) for TIME in time]
+
+        fig = px.line(
+            x=timezone_corrected_l,
+            y=meteo_vars,
+            title=f'Average {var_data["long_name"]} [{var_data["unit"]}] in Selected Countries',
+            # width=900,
+            # height=250,
+            labels={"x": "Date", "value": var_data['long_name'] + ' [' + var_data['unit'] + ']'},
+            markers=True
+        )
+        fig.update_layout(legend_title_text='Country')
+
+        country_names = context['chosen_countries'].values_list('name', flat=True)
+        old_names = ['wide_variable_' + str(num) for num in list(range(len(country_names)))]
+        new_names = {old_names[i]: country_names[i] for i in range(len(old_names))}
+        fig.for_each_trace(lambda t: t.update(name=new_names[t.name],
+                                              legendgroup=new_names[t.name],
+                                              hovertemplate=t.hovertemplate.replace(t.name, new_names[t.name])
+                                              )
+                           )
+
+        fig = fig._repr_html_()
+        context['timeseries1'] = fig
+
+
+        # plot 5 - correlation
+        context['chosen_country5'] = WorldBorder.objects.filter(id=request.POST.get('country5')).values()
+        # #country5 = WorldBorder.objects.filter(id=request.POST.get('country5')).values()
+        # country_geometry = WorldBorder.objects.filter(id=request.POST.get('country5')).values().last()['mpoly']
+        queryset = Location.objects.all().values('time').annotate(
+            avg_temp=Avg('temp')).annotate(
+            avg_rel_hum=Avg('rel_hum')).annotate(
+            avg_spec_hum=Avg('spec_hum')).order_by()
+        temp = queryset.values_list('avg_temp', flat=True)
+        rel_hum = queryset.values_list('avg_rel_hum', flat=True)
+        spec_hum = queryset.values_list('avg_spec_hum', flat=True)
+        meteo_vars = [temp, rel_hum, spec_hum]
+
+        time = queryset.values_list('time', flat=True)
+        timezone_corrected_l = [datetime.strptime(
+            datetime.strftime(TIME + timedelta(hours=2), "%d-%m-%Y %H:%M"),
+            "%d-%m-%Y %H:%M"
+        ) for TIME in time]
+
+        fig = px.line(
+            x=timezone_corrected_l,
+            y=meteo_vars,
+            title=f'Comparison of Average Values of Meteorological Variables in ',
+            # width=900,
+            # height=250,
+            labels={"x": "Date", "y": "Variables"},
+            markers=True
+        )
+        fig.update_layout(legend_title_text='Variable')
+        var_names = ['Temperature', 'Relative Humidity', 'Specific Humidity']
+        old_names = ['wide_variable_' + str(num) for num in list(range(len(var_names)))]
+        new_names = {old_names[i]: var_names[i] for i in range(len(old_names))}
+        fig.for_each_trace(lambda t: t.update(name=new_names[t.name],
+                                              legendgroup=new_names[t.name],
+                                              hovertemplate=t.hovertemplate.replace(t.name, new_names[t.name])
+                                              )
+                           )
+        fig = fig._repr_html_()
+        context['timeseries5'] = fig
+
+
+
+    return render(request, 'analysis_page/timeseries.html', context)
+
+
+def extract_var(country, meteo_variable):
+    # filter
+    country_geometry = WorldBorder.objects.filter(name=country['name']).values().last()['mpoly']
+    queryset = Location.objects.filter(geometry__intersects=country_geometry).values('time').annotate(
+        meteo_var=Avg(meteo_variable)).order_by()
+    # extract time and variable
+    time = queryset.values_list('time', flat=True)
+    meteo_var = queryset.values_list('meteo_var', flat=True)
+    #
+    return {'time': time, 'meteo_var': meteo_var}
+
 
 def interpolation(request):
     return render(request, 'analysis_page/interpolation.html')
 
 def animation(request):
     return render(request, 'analysis_page/animation.html')
+
+def long_name_and_unit(var):
+    if var == 'temp':
+        return {'long_name': 'Temperature', 'unit': 'K'}
+    elif var == 'rel_hum':
+        return {'long_name': 'Relative Humidity', 'unit': '%'}
+    elif var == 'spec_hum':
+        return {'long_name': 'Specific Humidity', 'unit': 'kg/kg'}
+    elif var == 'tcc':
+        return {'long_name': 'Total Cloud Cover', 'unit': '%'}
+    elif var == 'u_wind':
+        return {'long_name': 'U-Component of Wind', 'unit': 'm/s'}
+    elif var == 'v_wind':
+        return {'long_name': 'V-Component of Wind', 'unit': 'm/s'}
+    elif var == 'gust':
+        return {'long_name': 'Wind Speed (Gust)', 'unit': 'm/s'}
+    elif var == 'pwat':
+        return {'long_name': 'Precipitable Water', 'unit': 'kg/m^2'}
+
 
 
 
