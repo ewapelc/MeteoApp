@@ -25,4 +25,5 @@ urlpatterns = [
     path('analysis/timeseries/', views.timeseries, name='timeseries'),
     path('analysis/interpolation/', views.interpolation, name='interpolation'),
     path('analysis/animation/', views.animation, name='animation'),
+    path('analysis/clusterization/', views.clusterization, name='clusterization'),
 ]

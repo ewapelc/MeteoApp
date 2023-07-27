@@ -44,7 +44,7 @@ h1 {
 
 .menu {
   width: 17%;
-  height: 30vh;
+  height: 40vh;
 }
 
 
@@ -70,5 +70,9 @@ h1 {
 }
 
 .timeseries-plot {
+    padding-bottom: 50px;
+}
+
+.interpolation-plot {
     padding-bottom: 50px;
 }

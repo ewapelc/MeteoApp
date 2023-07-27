@@ -1,6 +1,10 @@
 import folium as folium
 import geopandas as gpd
 from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+import shapely
 
 import pandas as pd
 from django.shortcuts import redirect
@@ -382,93 +386,93 @@ def timeseries(request):
     }
 
     if request.method == 'POST':
-        context['chosen_countries'] = WorldBorder.objects.filter(id__in=request.POST.getlist('country[]')).values()
-        context['chosen_var'] = request.POST.get('variable')
+        if 'plot-1' in request.POST:
+            context['chosen_countries'] = WorldBorder.objects.filter(id__in=request.POST.getlist('country[]')).values()
+            context['chosen_var'] = request.POST.get('variable')
 
 
-        # plot 1 - multiple countries
-        var_data = long_name_and_unit(context['chosen_var'])
+            # plot 1 - multiple countries
+            var_data = long_name_and_unit(context['chosen_var'])
 
-        meteo_vars = []
-        i = 0
-        time = 0
-        for country in context['chosen_countries']:
-            if i == 0:
-                res = extract_var(country=country, meteo_variable=context['chosen_var'])
-                time = res['time']
-                meteo_var = res['meteo_var']
-            else:
-                meteo_var = extract_var(country=country, meteo_variable=context['chosen_var'])['meteo_var']
-            meteo_vars.append(meteo_var)
+            meteo_vars = []
+            i = 0
+            time = 0
+            for country in context['chosen_countries']:
+                if i == 0:
+                    res = extract_var(country=country, meteo_variable=context['chosen_var'])
+                    time = res['time']
+                    meteo_var = res['meteo_var']
+                else:
+                    meteo_var = extract_var(country=country, meteo_variable=context['chosen_var'])['meteo_var']
+                meteo_vars.append(meteo_var)
 
-        timezone_corrected_l = [datetime.strptime(
-            datetime.strftime(TIME + timedelta(hours=2), "%d-%m-%Y %H:%M"),
-            "%d-%m-%Y %H:%M"
-        ) for TIME in time]
+            timezone_corrected_l = [datetime.strptime(
+                datetime.strftime(TIME + timedelta(hours=2), "%d-%m-%Y %H:%M"),
+                "%d-%m-%Y %H:%M"
+            ) for TIME in time]
 
-        fig = px.line(
-            x=timezone_corrected_l,
-            y=meteo_vars,
-            title=f'Average {var_data["long_name"]} [{var_data["unit"]}] in Selected Countries',
-            # width=900,
-            # height=250,
-            labels={"x": "Date", "value": var_data['long_name'] + ' [' + var_data['unit'] + ']'},
-            markers=True
-        )
-        fig.update_layout(legend_title_text='Country')
+            fig = px.line(
+                x=timezone_corrected_l,
+                y=meteo_vars,
+                title=f'Average {var_data["long_name"]} [{var_data["unit"]}] in Selected Countries',
+                # width=900,
+                # height=250,
+                labels={"x": "Date", "value": var_data['long_name'] + ' [' + var_data['unit'] + ']'},
+                markers=True
+            )
+            fig.update_layout(legend_title_text='Country')
 
-        country_names = context['chosen_countries'].values_list('name', flat=True)
-        old_names = ['wide_variable_' + str(num) for num in list(range(len(country_names)))]
-        new_names = {old_names[i]: country_names[i] for i in range(len(old_names))}
-        fig.for_each_trace(lambda t: t.update(name=new_names[t.name],
-                                              legendgroup=new_names[t.name],
-                                              hovertemplate=t.hovertemplate.replace(t.name, new_names[t.name])
-                                              )
-                           )
+            country_names = context['chosen_countries'].values_list('name', flat=True)
+            old_names = ['wide_variable_' + str(num) for num in list(range(len(country_names)))]
+            new_names = {old_names[i]: country_names[i] for i in range(len(old_names))}
+            fig.for_each_trace(lambda t: t.update(name=new_names[t.name],
+                                                  legendgroup=new_names[t.name],
+                                                  hovertemplate=t.hovertemplate.replace(t.name, new_names[t.name])
+                                                  )
+                               )
 
-        fig = fig._repr_html_()
-        context['timeseries1'] = fig
+            fig = fig._repr_html_()
+            context['timeseries1'] = fig
 
+        elif 'plot-5' in request.POST:
+            # plot 5 - correlation
+            context['chosen_country5'] = WorldBorder.objects.filter(id=request.POST.get('country5')).values().last()
+            country_geometry = WorldBorder.objects.filter(name=context['chosen_country5']['name']).values().last()['mpoly']
+            queryset = Location.objects.filter(geometry__intersects=country_geometry).values('time').annotate(
+                avg_temp=Avg('temp')).annotate(
+                avg_rel_hum=Avg('rel_hum')).annotate(
+                avg_spec_hum=Avg('spec_hum')).order_by()
+            temp = queryset.values_list('avg_temp', flat=True)
+            rel_hum = queryset.values_list('avg_rel_hum', flat=True)
+            spec_hum = queryset.values_list('avg_spec_hum', flat=True)
+            meteo_vars = [temp, rel_hum, spec_hum]
 
-        # plot 5 - correlation
-        context['chosen_country5'] = WorldBorder.objects.filter(id=request.POST.get('country5')).values()
-        # #country5 = WorldBorder.objects.filter(id=request.POST.get('country5')).values()
-        # country_geometry = WorldBorder.objects.filter(id=request.POST.get('country5')).values().last()['mpoly']
-        queryset = Location.objects.all().values('time').annotate(
-            avg_temp=Avg('temp')).annotate(
-            avg_rel_hum=Avg('rel_hum')).annotate(
-            avg_spec_hum=Avg('spec_hum')).order_by()
-        temp = queryset.values_list('avg_temp', flat=True)
-        rel_hum = queryset.values_list('avg_rel_hum', flat=True)
-        spec_hum = queryset.values_list('avg_spec_hum', flat=True)
-        meteo_vars = [temp, rel_hum, spec_hum]
+            time = queryset.values_list('time', flat=True)
+            timezone_corrected_l = [datetime.strptime(
+                datetime.strftime(TIME + timedelta(hours=2), "%d-%m-%Y %H:%M"),
+                "%d-%m-%Y %H:%M"
+            ) for TIME in time]
 
-        time = queryset.values_list('time', flat=True)
-        timezone_corrected_l = [datetime.strptime(
-            datetime.strftime(TIME + timedelta(hours=2), "%d-%m-%Y %H:%M"),
-            "%d-%m-%Y %H:%M"
-        ) for TIME in time]
-
-        fig = px.line(
-            x=timezone_corrected_l,
-            y=meteo_vars,
-            title=f'Comparison of Average Values of Meteorological Variables in ',
-            # width=900,
-            # height=250,
-            labels={"x": "Date", "y": "Variables"},
-            markers=True
-        )
-        fig.update_layout(legend_title_text='Variable')
-        var_names = ['Temperature', 'Relative Humidity', 'Specific Humidity']
-        old_names = ['wide_variable_' + str(num) for num in list(range(len(var_names)))]
-        new_names = {old_names[i]: var_names[i] for i in range(len(old_names))}
-        fig.for_each_trace(lambda t: t.update(name=new_names[t.name],
-                                              legendgroup=new_names[t.name],
-                                              hovertemplate=t.hovertemplate.replace(t.name, new_names[t.name])
-                                              )
-                           )
-        fig = fig._repr_html_()
-        context['timeseries5'] = fig
+            fig = px.line(
+                x=timezone_corrected_l,
+                y=meteo_vars,
+                title=f'Comparison of Average Values of Meteorological Variables in {context["chosen_country5"]["name"]}',
+                # width=900,
+                # height=250,
+                labels={"x": "Date", "value": "Variables"},
+                markers=True
+            )
+            fig.update_layout(legend_title_text='Variable')
+            var_names = ['Temperature [K]', 'Relative Humidity [%]', 'Specific Humidity [kg/kg]']
+            old_names = ['wide_variable_' + str(num) for num in list(range(len(var_names)))]
+            new_names = {old_names[i]: var_names[i] for i in range(len(old_names))}
+            fig.for_each_trace(lambda t: t.update(name=new_names[t.name],
+                                                  legendgroup=new_names[t.name],
+                                                  hovertemplate=t.hovertemplate.replace(t.name, new_names[t.name])
+                                                  )
+                               )
+            fig = fig._repr_html_()
+            context['timeseries5'] = fig
 
 
 
@@ -488,10 +492,88 @@ def extract_var(country, meteo_variable):
 
 
 def interpolation(request):
-    return render(request, 'analysis_page/interpolation.html')
+    context = {
+        'countries': WorldBorder.objects.all().order_by('name'),
+        'variables': ['temp', 'rel_hum', 'tcc', 'spec_hum', 'u_wind', 'v_wind', 'gust', 'pwat'],
+        'times': Location.objects.values('time').distinct().order_by('time')
+    }
+
+    if request.method == 'POST':
+        if 'plot-1' in request.POST:
+            context['chosen_country'] = WorldBorder.objects.filter(id=request.POST.get('country')).values().last()
+            context['chosen_var'] = request.POST.get('variable')
+            context['chosen_date'] = datetime.strptime((request.POST.get('date')), "%d-%m-%Y %H:%M")
+
+            # geopandas visualization
+            # filter points
+            points = list(Location.objects.filter(time=context['chosen_date'], geometry__intersects=context['chosen_country']['mpoly'])\
+                .values(context['chosen_var'], 'geometry'))
+            country = list(WorldBorder.objects.filter(id=request.POST.get('country')).values('iso2', geometry=F('mpoly')))
+
+            # transform data
+            country_gdf = gpd.GeoDataFrame(country, crs='EPSG:4326')
+            wkt1 = country_gdf.geometry.apply(lambda x: x.wkt)
+            country_gdf = gpd.GeoDataFrame(country_gdf, geometry=gpd.GeoSeries.from_wkt(wkt1), crs='EPSG:4326')
+
+            data_df = pd.DataFrame(points)
+            data_df.dropna(axis=0, inplace=True)
+            wkt2 = data_df.geometry.apply(lambda x: x.wkt)
+            data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
+
+            data = get_plot(country_gdf, data_gdf, context['chosen_var'])
+
+            context['matplotlib_plot'] = data
+
+
+    return render(request, 'analysis_page/interpolation.html', context)
+
+def get_graph():
+    buffer = BytesIO()
+    plt.savefig(buffer, format='png')
+    buffer.seek(0)
+    image_png = buffer.getvalue()
+    graph = base64.b64encode(image_png)
+    graph = graph.decode('utf-8')
+    buffer.close()
+    return graph
+
+
+def get_plot(country_gdf, data_gdf, chosen_var):
+    plt.switch_backend('AGG')
+    fig, ax = plt.subplots(figsize=(10, 7))
+
+    # country borders
+    country_gdf.plot(ax=ax, edgecolor="black", linewidth=0.5, color='white')
+
+    # bins
+    step = 0.125
+
+    all_points = data_gdf.geometry.tolist()
+    all_poly = [shapely.geometry.Polygon([[first.x - step, first.y + step],
+                                          [first.x + step, first.y + step],
+                                          [first.x + step, first.y - step],
+                                          [first.x - step, first.y - step],
+                                          [first.x - step, first.y + step]]) for first in all_points]
+
+    poly_df = gpd.GeoDataFrame({'geometry': all_poly}, crs="EPSG:4326")
+    poly_df['variable'] = data_gdf[chosen_var]
+    poly_df.plot(ax=ax, edgecolor="white", linewidth=0.5, column="variable", cmap="viridis", alpha=.5, legend=True)
+
+    # points
+    # data_gdf.plot(ax=ax, column=chosen_var, cmap="viridis", legend=True, edgecolor="black", linewidth=0.2,
+    #             legend_kwds={'shrink': 0.75}, markersize=300, marker='s')
+    data_gdf.geometry.plot(ax=ax, color='white', markersize=1)
+
+    plt.tight_layout()
+    plot = get_graph()
+    return plot
+
 
 def animation(request):
     return render(request, 'analysis_page/animation.html')
+
+def clusterization(request):
+    return render(request, 'analysis_page/clusterization.html')
 
 def long_name_and_unit(var):
     if var == 'temp':

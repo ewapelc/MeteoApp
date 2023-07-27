@@ -33,7 +33,7 @@ navbar ul a:hover {
     color: blue;
 }
 
-img {
+.navbar-img {
     width: 40px;
     height: 40px;
     margin-right: 50px;

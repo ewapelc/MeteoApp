@@ -2,7 +2,89 @@
 
 <h1>Interpolations</h1>
 
-<span>Interpolacja między punktami, krieging, wypełnianie sześcienne</span>
+<h3>Interpolacja między punktami, krieging, wypełnianie sześcienne</h3>
+
+<div class='interpolation-plot'>
+    <span>
+        1. Binning
+    </span>
+
+    <div class="form">
+        <form method="post">
+        {% csrf_token %}
+            <div class="user-input">
+                <label for="country">Country</label>
+                <select id="country" name="country" required>
+                    <option selected disabled style="display:none;" value="">Select...</option>
+                    {% if countries %}
+                        {% for country in countries %}
+                            <option value="{{ country.id }}">{{ country.name }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="user-input">
+                <label for="variable">Variable</label>
+                <select id="variable" name="variable" required>
+                    <option selected disabled style="display:none;" value="">Select...</option>
+                    {% if variables %}
+                        {% for var in variables %}
+                            <option value="{{ var }}">{{ var }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="user-input">
+                <label for="date">Date</label>
+                <select id="date" name="date" required>
+                    <option selected disabled style="display:none;" value="">Select...</option>
+                    {% if times %}
+                        {% for time in times %}
+                            <option value="{{ time.time|date:'d-m-Y H:i' }}">{{ time.time|date:"d-m-Y H:i" }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <input type="submit" name="plot-1" value="Submit">
+        </form>
+    </div>
+
+    <hr>
+    <p><strong>Selected country:</strong></p>
+    {% if chosen_country %}
+        <p>{{ chosen_country.name }}</p>
+    {% endif %}
+
+    <p><strong>Selected variable:</strong></p>
+    {% if chosen_var %}
+        <p>{{ chosen_var }}</p>
+    {% endif %}
+
+    <p><strong>Selected date:</strong></p>
+    {% if chosen_date %}
+        <p>{{ chosen_date }}</p>
+    {% endif %}
+
+    <hr>
+
+    <div class="plot">
+<!--        {% autoescape off %}-->
+<!--        {{ gpd_plot|safe }}-->
+<!--        {% endautoescape %}-->
+        {% if matplotlib_plot %}
+            <img src="data:image/png;base64, {{matplotlib_plot|safe}}">
+        {% endif %}
+    </div>
+</div>
+
+<div class='interpolation-plot'>
+    <span>
+        2. Interpolacja krieging
+    </span>
+</div>
 
 </div>
 </div>

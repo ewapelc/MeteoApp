@@ -46,7 +46,7 @@
                 </select>
             </div>
 
-            <input type="submit" value="Submit">
+            <input type="submit" name="plot-1" value="Submit">
         </form>
     </div>
     <hr>
@@ -79,38 +79,31 @@ prowincji w wybranym przez użytkownika kraju
 </span>
 </div>
 
-<div class="timeseries-plot">
-<span>
-4.
-Moze podział na strefy klimatyczne i unaoczenienie różnic
-średnich temperatur (albo innej zmiennej)
-</span>
-</div>
 
 <div class="timeseries-plot">
     <span>
     5.
-    Zestawienie ze sobą zmiennych temperatura i wilgotność
+    Zestawienie ze sobą zmiennych temperatura i wilgotność -  WYBÓR KRAJU
     </span>
     <hr>
-<!--        <div class="form">-->
-<!--        <form method="post">-->
-<!--        {% csrf_token %}-->
-<!--            <div class="user-input">-->
-<!--                <label for="country5">Country</label>-->
-<!--                <select id="country5" name="country5" required>-->
-<!--                    <option selected disabled style="display:none;" value="">Select...</option>-->
-<!--                    {% if countries %}-->
-<!--                        {% for country in countries %}-->
-<!--                            <option value="{{ country.id }}">{{ country.name }}</option>-->
-<!--                        {% endfor %}-->
-<!--                    {% endif %}-->
-<!--                </select>-->
-<!--            </div>-->
+        <div class="form">
+        <form method="post">
+        {% csrf_token %}
+            <div class="user-input">
+                <label for="country5">Country</label>
+                <select id="country5" name="country5" required>
+                    <option selected disabled style="display:none;" value="">Select...</option>
+                    {% if countries %}
+                        {% for country in countries %}
+                            <option value="{{ country.id }}">{{ country.name }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
 
-<!--            <input type="submit" value="Submit">-->
-<!--        </form>-->
-<!--    </div>-->
+            <input type="submit" name="plot-5" value="Submit">
+        </form>
+    </div>
 
     <hr>
     <p><strong>Selected country:</strong></p>
@@ -123,46 +116,6 @@ Moze podział na strefy klimatyczne i unaoczenienie różnic
         {{ timeseries5|safe }}
         {% endautoescape %}
     </div>
-</div>
-
-<div class="timeseries-plot">
-<span>
-6. Podział na strefy klimatyczne - GLOBALNE
-i pokazanie że wykresy timeseries różnią się dla tych
-różnych stref klimatycznych
-z innymi kolorami i pokazaniem srednich
-</span>
-</div>
-
-<div class="timeseries-plot">
-<span>
-7. Dla danej strefy klimatycznej
-np gdzieś gdzie jest pustynia
-pokazać że np regiony pustynne w Afryce mają największy wpływ
-na średnią temperaturę całej strefy
-że ciągną ją mocno do góry
-
-To samo dla arktyki
-</span>
-</div>
-
-<div class="timeseries-plot">
-<span>
-INNE:
-<br>
-8. Jakaś klasteryzacja zmiennych i pokazanie, że
-to jak wartości zmiennych się grupują odpowiada np.
-podziałowi na strefy klimatyczne
-albo inne mniejsze regiony na terenie kraju
-Dwie mapki koło siebie z kolorowanymi strefami, regionami
-a pod spodem timeseries
-żeby unaocznić różniące się mikroklimaty
-
-
-Może wybrać kraj, gdzie są regiony o różnym klimacie, żeby
-było to wyraźnie widać
-np. Polska albo stany
-</span>
 </div>
 
 
