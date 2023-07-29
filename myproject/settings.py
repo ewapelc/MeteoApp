@@ -18,14 +18,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Make modifications required for GDAL package
 import os
-if os.name == 'nt':
+#if os.name == 'nt':
     # GDAL_LIBRARY_PATH = r'C:\Users\Ewa\PycharmProjects\MeteoApp\venv\Lib\site-packages\osgeo\gdal300'
     # GEOS_LIBRARY_PATH = r'C:\Users\Ewa\PycharmProjects\MeteoApp\venv\Lib\site-packages\osgeo\geos_c'
 
-    VENV_BASE = os.environ['VIRTUAL_ENV']
-    os.environ['PATH'] = os.path.join(VENV_BASE, 'Lib\\site-packages\\osgeo') + ';' + os.environ['PATH']
-    # os.environ["PATH"] += os.pathsep + BASE_DIR + '\\venv\\Lib\\site-packages\\osgeo'
-    os.environ['PROJ_LIB'] = os.path.join(VENV_BASE, 'Lib\\site-packages\\osgeo\\data\\proj') + ';' + os.environ['PATH']
+VENV_BASE = os.environ['VIRTUAL_ENV']
+os.environ['PATH'] = os.path.join(VENV_BASE, 'Lib\\site-packages\\osgeo') + ';' + os.environ['PATH']
+# os.environ["PATH"] += os.pathsep + BASE_DIR + '\\venv\\Lib\\site-packages\\osgeo'
+#os.environ['PROJ_LIB'] = os.path.join(VENV_BASE, 'Lib\\site-packages\\osgeo\\data\\proj') + ';' + os.environ['PATH']
+os.environ['PROJ_LIB'] = 'C:\\Users\\Ewa\\anaconda3\\envs\\py39\\Lib\\site-packages\\~asterio\\proj_data'
 
 
 

@@ -43,3 +43,20 @@ class Location(models.Model):
     pwat = models.FloatField()
     #
     geometry = models.PointField()
+
+
+
+class CountryRegion(models.Model):
+    # Regular Django fields corresponding to the attributes in the
+    # regions GeoJson file.
+    country_iso3 = models.CharField("3 Digit ISO", max_length=3)
+    country_name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50)
+    type = models.CharField(max_length=50)
+
+    # GeoDjango-specific: a geometry field (MultiPolygonField)
+    geometry = models.MultiPolygonField()
+
+    # Returns the string representation of the model.
+    def __str__(self):
+        return self.name
