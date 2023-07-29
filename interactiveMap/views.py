@@ -4,7 +4,13 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
-import shapely
+from shapely.geometry import Polygon
+# import rasterio
+# import rasterio.mask
+# from rasterio.plot import show
+# from rasterio.transform import Affine
+import os
+from PIL import Image
 
 import pandas as pd
 from django.shortcuts import redirect
@@ -520,9 +526,9 @@ def interpolation(request):
             wkt2 = data_df.geometry.apply(lambda x: x.wkt)
             data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
 
-            data = get_plot(country_gdf, data_gdf, context['chosen_var'])
+            [fig, plot] = get_plot(country_gdf, data_gdf, context['chosen_var'], context['chosen_date'])
 
-            context['matplotlib_plot'] = data
+            context['matplotlib_plot'] = plot
 
 
     return render(request, 'analysis_page/interpolation.html', context)
@@ -538,7 +544,7 @@ def get_graph():
     return graph
 
 
-def get_plot(country_gdf, data_gdf, chosen_var):
+def get_plot(country_gdf, data_gdf, chosen_var, chosen_date):
     plt.switch_backend('AGG')
     fig, ax = plt.subplots(figsize=(10, 7))
 
@@ -549,7 +555,7 @@ def get_plot(country_gdf, data_gdf, chosen_var):
     step = 0.125
 
     all_points = data_gdf.geometry.tolist()
-    all_poly = [shapely.geometry.Polygon([[first.x - step, first.y + step],
+    all_poly = [Polygon([[first.x - step, first.y + step],
                                           [first.x + step, first.y + step],
                                           [first.x + step, first.y - step],
                                           [first.x - step, first.y - step],
@@ -564,13 +570,131 @@ def get_plot(country_gdf, data_gdf, chosen_var):
     #             legend_kwds={'shrink': 0.75}, markersize=300, marker='s')
     data_gdf.geometry.plot(ax=ax, color='white', markersize=1)
 
+    var_data = long_name_and_unit(chosen_var)
+    date_str = datetime.strftime(chosen_date + timedelta(hours=2), "%d-%m-%Y %H:%M")
+    ax.set_title(f'{var_data["long_name"]} [{var_data["unit"]}] on {date_str}', fontdict={'fontsize': '15', 'fontweight': '3'})
+
     plt.tight_layout()
     plot = get_graph()
-    return plot
+    return [fig, plot]
+
+
+# def export_kde_raster(Z, XX, YY, min_x, max_x, min_y, max_y, proj, filename):
+#     '''Export and save a kernel density raster.'''
+#
+#     # Get resolution
+#     xres = (max_x - min_x) / len(XX)
+#     yres = (max_y - min_y) / len(YY)
+#
+#     # Set transform
+#     transform = Affine.translation(min_x - xres / 2, min_y - yres / 2) * Affine.scale(xres, yres)
+#
+#     # Export array as raster
+#     with rasterio.open(
+#             filename,
+#             mode = "w",
+#             driver = "GTiff",
+#             height = Z.shape[0],
+#             width = Z.shape[1],
+#             count = 1,
+#             dtype = Z.dtype,
+#             crs = proj,
+#             transform = transform,
+#     ) as new_dataset:
+#             new_dataset.write(Z, 1)
+
+def kriging():
+    '''Adapted from https://pygis.io/docs/e_interpolation.html#kriging'''
+
+
+
 
 
 def animation(request):
-    return render(request, 'analysis_page/animation.html')
+    context = {
+        'countries': WorldBorder.objects.all().order_by('name'),
+        'variables': ['temp', 'rel_hum', 'tcc', 'spec_hum', 'u_wind', 'v_wind', 'gust', 'pwat'],
+    }
+
+    if request.method == 'POST':
+        if 'plot-1' in request.POST:
+            context['chosen_country'] = WorldBorder.objects.filter(id=request.POST.get('country')).values().last()
+            context['chosen_var'] = request.POST.get('variable')
+
+            parent = os.path.dirname
+            path_to_gif = os.path.join(parent((__file__)), 'static', 'images', 'animation.gif')
+            if path_to_gif:
+                os.remove(path_to_gif)
+
+
+            # filter and transofrm borders data
+            country = list(
+                WorldBorder.objects.filter(id=request.POST.get('country')).values('iso2', geometry=F('mpoly')))
+
+            country_gdf = gpd.GeoDataFrame(country, crs='EPSG:4326')
+            wkt1 = country_gdf.geometry.apply(lambda x: x.wkt)
+            country_gdf = gpd.GeoDataFrame(country_gdf, geometry=gpd.GeoSeries.from_wkt(wkt1), crs='EPSG:4326')
+
+
+            all_dates = list(Location.objects.values('time').distinct().order_by('time'))
+            for date in all_dates:
+                # filter and tranform meteorological data
+                points = list(Location.objects.filter(time=date['time'],
+                                                      geometry__intersects=context['chosen_country']['mpoly']) \
+                              .values(context['chosen_var'], 'geometry'))
+
+                data_df = pd.DataFrame(points)
+                data_df.dropna(axis=0, inplace=True)
+                wkt2 = data_df.geometry.apply(lambda x: x.wkt)
+                data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
+
+                [fig, plot] = get_plot(country_gdf, data_gdf, context['chosen_var'], date['time'])
+
+                # file destination
+                date_str = datetime.strftime(date['time'] + timedelta(hours=2), "%d%m%Y-t%Hz")
+
+                filename = date_str + '-frame.png'
+                parent = os.path.dirname
+                destination = os.path.join(parent(parent((__file__))), 'filestorage', 'animations', 'frames', filename)
+
+                # save result
+                result = fig.get_figure()
+                result.savefig(destination, format='png', dpi=100)
+
+            # here read all saved plots and make a gif, later return gif to template
+
+            # Create the frames
+            frames = []
+            path = os.path.join(parent(parent((__file__))), 'filestorage', 'animations', 'frames')
+            for i in os.listdir(path):
+                new_frame = Image.open(os.path.join(path, i))
+                frames.append(new_frame)
+
+            # Save into a GIF file that loops forever
+            #path_to_gif = os.path.join(parent(parent((__file__))), 'filestorage', 'animations', 'gif')
+            path_to_gif = os.path.join(parent((__file__)), 'static', 'images')
+            gif_destination = os.path.join(path_to_gif, 'animation.gif')
+            frames[0].save(gif_destination, format='GIF',
+                           append_images=frames[1:],
+                           save_all=True,
+                           duration=900, loop=0)
+
+
+            # remove frames
+            path = os.path.join(parent(parent((__file__))), 'filestorage', 'animations', 'frames')
+            for file_name in os.listdir(path):
+                # construct full file path
+                file = path + file_name
+                if os.path.isfile(file):
+                    os.remove(file)
+
+
+            context['animation_gif'] = True
+
+
+
+    return render(request, 'analysis_page/animation.html', context)
+
 
 def clusterization(request):
     return render(request, 'analysis_page/clusterization.html')
