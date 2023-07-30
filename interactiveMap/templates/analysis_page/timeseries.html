@@ -72,11 +72,74 @@
 </div>
 
 <div class="timeseries-plot">
-<span>
-2.
-zestawienie dla wszystkich
-prowincji w wybranym przez użytkownika kraju
-</span>
+    <span>
+        2.
+        zestawienie dla wszystkich
+        prowincji w wybranym przez użytkownika kraju
+    </span>
+
+    <div class="form">
+        <form method="post">
+        {% csrf_token %}
+            <div class="user-input">
+                <label for="country2">Country</label>
+                <select id="country2" name="country2" required>
+                    <option selected disabled style="display:none;" value="">Select...</option>
+                    {% if countries %}
+                        {% for country in countries %}
+                            <option value="{{ country.id }}">{{ country.name }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="user-input">
+                <label for="variable2">Variable</label>
+                <select id="variable2" name="variable2" required>
+                    <option selected disabled style="display:none;" value="">Select...</option>
+                    {% if variables %}
+                        {% for var in variables %}
+                            <option value="{{ var }}">{{ var }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <input type="submit" name="plot-2" value="Submit">
+        </form>
+    </div>
+
+    <hr>
+    <p><strong>Selected country:</strong></p>
+    {% if chosen_country2 %}
+        <p>{{ chosen_country2.name }}</p>
+    {% endif %}
+
+    <p><strong>Selected variable:</strong></p>
+    {% if chosen_var2 %}
+        <p>{{ chosen_var2 }}</p>
+    {% endif %}
+
+<!--    {% if regions %}-->
+<!--        {% for r in regions %}-->
+<!--            <p>{{ r.name}}, {{ r.type }}</p>-->
+<!--        {% endfor %}-->
+<!--    {% endif %}-->
+
+<!--    {% if x %}-->
+<!--        {% for item in x %}-->
+<!--            <p>{{ item.region }}</p>-->
+<!--        {% endfor %}-->
+<!--    {% endif %}-->
+
+        <div class="plot">
+        {% autoescape off %}
+        {{ timeseries2|safe }}
+        {% endautoescape %}
+    </div>
+
+
+    <hr>
 </div>
 
 

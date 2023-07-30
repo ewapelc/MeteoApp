@@ -16,7 +16,7 @@ import pandas as pd
 from django.shortcuts import redirect
 from django.views import generic
 from django.contrib.gis.geos import Point
-from .models import Location, WorldBorder
+from .models import Location, WorldBorder, CountryRegion
 from django.db.models import Subquery, Avg, Count, F, OuterRef
 
 import plotly.express as px
@@ -479,6 +479,47 @@ def timeseries(request):
                                )
             fig = fig._repr_html_()
             context['timeseries5'] = fig
+
+        elif 'plot-2' in request.POST:
+            context['chosen_country2'] = WorldBorder.objects.filter(id=request.POST.get('country2')).values().last()
+            context['chosen_var2'] = request.POST.get('variable2')
+            context['regions'] = CountryRegion.objects.filter(country_iso3=context['chosen_country2']['iso3']).values()
+
+            country_geometry = WorldBorder.objects.filter(name=context['chosen_country2']['name']).values().last()['mpoly']
+            queryset = Location.objects.filter(geometry__intersects=country_geometry).annotate(
+                region=Subquery(
+                    CountryRegion.objects.filter(geometry__contains=OuterRef('geometry')).values('name')
+                )
+            ).values('time', context['chosen_var2'], 'region')
+
+            queryset = queryset.values('time', 'region').annotate(meteo_var=Avg(context['chosen_var2'])).order_by()\
+                .values('time', 'region', 'meteo_var')
+
+
+            var_data = long_name_and_unit(context['chosen_var2'])
+
+            time = queryset.values_list('time', flat=True)
+            meteo_var = queryset.values_list('meteo_var', flat=True)
+            region = queryset.values_list('region', flat=True)
+
+            timezone_corrected_l = [datetime.strptime(
+                datetime.strftime(TIME + timedelta(hours=2), "%d-%m-%Y %H:%M"),
+                "%d-%m-%Y %H:%M"
+            ) for TIME in time]
+
+            fig = px.line(
+                x=timezone_corrected_l,
+                y=meteo_var,
+                color=region,
+                markers=True,
+                title=f'Average {var_data["long_name"]} [{var_data["unit"]}] in each region of selected country',
+                labels={"x": "Date", "y": var_data['long_name'] + ' [' + var_data['unit'] + ']'},
+            )
+            fig.update_layout(legend_title_text='Regions')
+
+            fig = fig._repr_html_()
+            context['timeseries2'] = fig
+
 
 
 
