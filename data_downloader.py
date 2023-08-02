@@ -16,7 +16,7 @@ suffix = 'z.pgrb2.0p25.f000'
 # Every six hours the model generates new files.
 timelist = ['00', '06', '12', '18']
 
-DOWNLOADS_DIR = "filestorage"
+DOWNLOADS_DIR = "filestorage/grib"
 VARIABLES = "UGRD,VGRD,GUST,TMP,RH,SPFH,PWAT,TCDC"
 LEVELS = "200_mb,entire_atmosphere_%5C%28considered_as_a_single_layer%5C%29,surface"
 

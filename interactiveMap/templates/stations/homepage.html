@@ -16,6 +16,11 @@
 
     <section id="about">
         <h1>About project</h1>
+        {% if variables %}
+            {% for var in variables %}
+                {{ var }}
+            {% endfor %}
+        {% endif %}
     </section>
     <section id="map">
         <h1>Interactive map</h1>
