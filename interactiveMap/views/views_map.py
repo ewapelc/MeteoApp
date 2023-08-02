@@ -1,16 +1,6 @@
 import folium as folium
 import geopandas as gpd
 from datetime import datetime, timedelta
-import matplotlib.pyplot as plt
-from io import BytesIO
-import base64
-from shapely.geometry import Polygon
-# import rasterio
-# import rasterio.mask
-# from rasterio.plot import show
-# from rasterio.transform import Affine
-import os
-from PIL import Image
 
 import pandas as pd
 from django.shortcuts import redirect
@@ -18,6 +8,9 @@ from django.views import generic
 from django.contrib.gis.geos import Point
 from interactiveMap.models import Location, WorldBorder, CountryRegion
 from django.db.models import Subquery, Avg, Count, F, OuterRef
+from shapely.geometry import Polygon
+from django.db.models import Avg, Max, Min, Sum
+from matplotlib import cm
 
 import plotly.express as px
 
@@ -221,6 +214,7 @@ class InteractiveMap(generic.ListView):
 
         return data
 
+
     def create_choropleth(self, map, variable, datetime_obj, geo_data, data, color_palette):
         var_data = self.long_name_and_unit(variable)
 
@@ -236,39 +230,146 @@ class InteractiveMap(generic.ListView):
             legend_name=f"Average {var_data['long_name']} [{var_data['unit']}] on {datetime_obj}"
         ).add_to(map)
 
+    def normalize(self, value, min, max):
+        return ((value - min) / (max - min))
+
+    def rgba_to_hex(self, rgba_tuple):
+        ''' formatting to convert an RGB float tuple to a color hex string'''
+        r, g, b, a = rgba_tuple
+        return "#{:02x}{:02x}{:02x}{:02x}".format(int(255 * r), int(255 * g), int(255 * b), int(255 * a))
+
+    def create_popup_html(self, selected_country, lat, lon, selected_var, var_value):
+        var_data = self.long_name_and_unit(selected_var)
+        card_points = self.cardinal_points(lat=lat, lon=lon)
+        # setup the content of the popup
+        html = '''\
+        <body style="background-color:pink;">
+        <p>Center coordinates:<br>
+        Latitude: <strong>{lat} {cp_lat}</strong><br>
+        Longitude <strong>{lon} {cp_lon}</strong>
+        </p>
+        <p>{var_name}: <br><strong>{value} [{var_unit}]</strong></p>
+        </body>\
+        '''.format(country=selected_country['name'],
+                   lat=lat,
+                   cp_lat=card_points['lat'],
+                   lon=lon,
+                   cp_lon=card_points['lon'],
+                   value=var_value,
+                   var_name=var_data['long_name'],
+                   var_unit=var_data['unit'])
+
+        return html
+
+
     def render_points(self, map, points, context, selected_country, selected_var):
         var_data = self.long_name_and_unit(selected_var)
 
-        for station in points:
-            card_points = self.cardinal_points(lat=station['latitude'], lon=station['longitude'])
-            # setup the content of the popup
-            html = '''\
-            <body style="background-color:pink;">
-            <p style="color:red;">Country name: <br><strong>{country}</strong></p>
-            <p>Location coordinates:<br>
-            Latitude: <strong>{lat} {cp_lat}</strong><br>
-            Longitude <strong>{lon} {cp_lon}</strong>
-            </p>
-            <p>{var_name}: <br><strong>{value} [{var_unit}]</strong></p>
-            </body>\
-            '''.format(country=context['selected_country']['name'],
-                       lat=station['latitude'],
-                       cp_lat=card_points['lat'],
-                       lon=station['longitude'],
-                       cp_lon=card_points['lon'],
-                       value=station[self.request.session['meteo_var']],
-                       var_name=var_data['long_name'],
-                       var_unit=var_data['unit'])
+        # create geojson for spatial binning-------------------------------------------------
 
-            iframe = folium.IFrame(html, width=200, height=200)
+        points_adjusted = list(points.values('geometry', selected_var, 'latitude', 'longitude'))
+        data_df = pd.DataFrame(points_adjusted)
+        data_df.dropna(axis=0, inplace=True)
+        wkt2 = data_df.geometry.apply(lambda x: x.wkt)
+        data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
 
-            # initialize the popup
-            popup = folium.Popup(iframe)
+        # create polygons from original points, save them to GeoDataFrame
+        step = 0.125
+        all_points = data_gdf.geometry.tolist()
+        all_poly = [Polygon([[first.x - step, first.y + step],
+                             [first.x + step, first.y + step],
+                             [first.x + step, first.y - step],
+                             [first.x - step, first.y - step],
+                             [first.x - step, first.y + step]]) for first in all_points]
 
-            # create marker
-            folium.Marker([station['latitude'], station['longitude']],
-                          popup=popup
-                          ).add_to(map)
+        poly_gdf = gpd.GeoDataFrame({'geometry': all_poly}, crs="EPSG:4326")
+        poly_gdf['variable'] = data_gdf[selected_var]
+        poly_gdf['latitude'] = data_gdf['latitude']
+        poly_gdf['longitude'] = data_gdf['longitude']
+
+        # create GeoJson from polygons GeoDataFrame
+        geojson = poly_gdf.to_json()
+
+        # needed for variable normalization
+        min_var = Location.objects.filter(geometry__intersects=selected_country['mpoly']).aggregate(min=Min(selected_var))['min']
+        max_var = Location.objects.filter(geometry__intersects=selected_country['mpoly']).aggregate(max=Max(selected_var))['max']
+
+        viridis = cm.get_cmap('viridis')
+
+        # add geojson layer to map
+        geojson_layer = folium.features.GeoJson(geojson,
+                                name='geojson',
+                                style_function=lambda feature: {
+                                    'fillColor' : self.rgba_to_hex(rgba_tuple=viridis(self.normalize(feature['properties']['variable'], min_var, max_var))),
+                                    'fillOpacity': 0.7,
+                                    'color': 'black',
+                                    'opacity': 1,
+                                    'weight': 1,
+                                },
+                                # tooltip=lambda feature: folium.Popup(
+                                #     folium.IFrame(self.create_popup_html(selected_country=selected_country,
+                                #                                          lat=feature['properties']['latitude'],
+                                #                                          lon=feature['properties']['lat'],
+                                #                                          selected_var=selected_var,
+                                #                                          var_value=feature['properties']['variable']),
+                                #                   width=200,
+                                #                   height=200)),
+                                tooltip=folium.GeoJsonTooltip(
+                                    fields=[
+                                        'variable',
+                                        'latitude',
+                                        'longitude'
+                                    ],
+                                    aliases=[
+                                        f"{var_data['long_name']} [{var_data['unit']}]: ",
+                                        "Latitude:",
+                                        "Longitude: "
+                                    ],
+                                    localize=True,
+                                    sticky=False,
+                                    labels=True,
+                                    style="""
+                                       background-color: #F0EFEF;
+                                       border: 2px solid black;
+                                       border-radius: 3px;
+                                       box-shadow: 3px;
+                                        """,
+                                ),
+                                ).add_to(map)
+
+
+        # end geojson---------------------------------------------------------------------------
+
+        # for station in points:
+        #     card_points = self.cardinal_points(lat=station['latitude'], lon=station['longitude'])
+        #     # setup the content of the popup
+        #     html = '''\
+        #     <body style="background-color:pink;">
+        #     <p style="color:red;">Country name: <br><strong>{country}</strong></p>
+        #     <p>Location coordinates:<br>
+        #     Latitude: <strong>{lat} {cp_lat}</strong><br>
+        #     Longitude <strong>{lon} {cp_lon}</strong>
+        #     </p>
+        #     <p>{var_name}: <br><strong>{value} [{var_unit}]</strong></p>
+        #     </body>\
+        #     '''.format(country=context['selected_country']['name'],
+        #                lat=station['latitude'],
+        #                cp_lat=card_points['lat'],
+        #                lon=station['longitude'],
+        #                cp_lon=card_points['lon'],
+        #                value=station[self.request.session['meteo_var']],
+        #                var_name=var_data['long_name'],
+        #                var_unit=var_data['unit'])
+        #
+        #     iframe = folium.IFrame(html, width=200, height=200)
+        #
+        #     # initialize the popup
+        #     popup = folium.Popup(iframe)
+        #
+        #     # create marker
+        #     folium.Marker([station['latitude'], station['longitude']],
+        #                   popup=popup
+        #                   ).add_to(map)
 
     def render_choropleth(self, m, datetime_obj):
         # get data
