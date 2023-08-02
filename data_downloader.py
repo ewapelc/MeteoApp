@@ -91,6 +91,8 @@ def download_files(startdate, enddate):
     enddate_obj = datetime.strptime(enddate, '%Y%m%d').date()
     daterange = pd.date_range(startdate_obj, enddate_obj)
 
+    print("Download files from the server.\n")
+
     for d in daterange:
         datestring = d.strftime('%Y%m%d')
         for run in range(0, 4):
@@ -115,5 +117,7 @@ def download_files(startdate, enddate):
                     print("Directory '%s' can not be created")
             # Get the file
             get_file(exist[1], local_filename)
-            print(local_filename, end="\n")
+            print(f"Downloaded file: {local_filename}", end="\n")
             time.sleep(1)
+
+    print('\x1b[6;30;42m' + 'Successfully downloaded data.' + '\x1b[0m')

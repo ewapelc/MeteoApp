@@ -10,7 +10,7 @@ regions_mapping = {
     "geometry": "geometry",
 }
 
-regions_shp = Path(__file__).resolve().parent / "data" / "regions" / "regions_merged.shp"
+regions_shp = Path(__file__).resolve().parent / "data" / "regions" / "regions.shp"
 
 
 def run(verbose=True):

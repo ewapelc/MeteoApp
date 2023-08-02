@@ -4,6 +4,7 @@ from django.core.management.base import BaseCommand
 from interactiveMap.models import Location
 import os
 import re
+import fnmatch
 
 class Command(BaseCommand):
 
@@ -16,13 +17,18 @@ class Command(BaseCommand):
         Prepare data before loading to database.
         """
         parent = os.path.dirname
-        file_path = os.path.join(parent(parent(parent(parent((__file__))))), 'filestorage')
+        file_path = os.path.join(parent(parent(parent(parent((__file__))))), 'filestorage', 'grib')
+        n = len(fnmatch.filter(os.listdir(file_path), '*.grib2'))
+        i = 0
+
+        print("Modify data before loading to database.\n")
 
         for file in os.listdir(file_path):
             if file.endswith("grib2"):
                 f = os.path.join(file_path, file)
+                i = i+1
 
-                print("Processing file: ", file)
+                print(f"[{i}/{n}] Processing file: ", file)
 
                 # Prepare GRIB2 data
                 ds = xr.open_dataset(f, engine="cfgrib", filter_by_keys={'typeOfLevel': 'isobaricInhPa'})
@@ -61,8 +67,9 @@ class Command(BaseCommand):
                     cycle = param_search.group(2)
                     new_filename = date + '.' + cycle
 
-                    destination = os.path.join(file_path, 'csv', new_filename)
-                    df.to_csv(destination + 'csv', index=False)
+                    parent = os.path.dirname
+                    destination = os.path.join(parent(file_path), 'csv', new_filename)
+                    df.to_csv(destination + '.csv', index=False)
 
-
+        print('\x1b[6;30;42m' + 'Successfully modified data.' + '\x1b[0m')
 
