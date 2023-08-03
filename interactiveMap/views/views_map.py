@@ -138,7 +138,7 @@ class InteractiveMap(generic.ListView):
         if self.request.session['visual_type'] == 'points':
             self.render_points(map=m, points=points, context=context, selected_country=selected_country, selected_var=selected_var)
         elif self.request.session['visual_type'] == 'choropleth':
-            self.render_choropleth(m=m, datetime_obj=datetime_obj)
+            self.render_choropleth(m=m, datetime_obj=datetime_obj, selected_country=selected_country, selected_var=selected_var)
 
 
         m = m._repr_html_()
@@ -215,20 +215,20 @@ class InteractiveMap(generic.ListView):
         return data
 
 
-    def create_choropleth(self, map, variable, datetime_obj, geo_data, data, color_palette):
-        var_data = self.long_name_and_unit(variable)
-
-        choropleth = folium.Choropleth(
-            name=f"{var_data['long_name']}",
-            geo_data=geo_data,
-            data=data,
-            columns=["iso2", f"{variable}_avg"],
-            key_on="feature.properties.iso2",
-            fill_color=color_palette,
-            fill_opacity=0.7,
-            line_opacity=0.2,
-            legend_name=f"Average {var_data['long_name']} [{var_data['unit']}] on {datetime_obj}"
-        ).add_to(map)
+    # def create_choropleth(self, map, variable, datetime_obj, geo_data, data, color_palette):
+    #     var_data = self.long_name_and_unit(variable)
+    #
+    #     choropleth = folium.Choropleth(
+    #         name=f"{var_data['long_name']}",
+    #         geo_data=geo_data,
+    #         data=data,
+    #         columns=["iso2", f"{variable}_avg"],
+    #         key_on="feature.properties.iso2",
+    #         fill_color=color_palette,
+    #         fill_opacity=0.7,
+    #         line_opacity=0.2,
+    #         legend_name=f"Average {var_data['long_name']} [{var_data['unit']}] on {datetime_obj}"
+    #     ).add_to(map)
 
     def normalize(self, value, min, max):
         return ((value - min) / (max - min))
@@ -306,14 +306,6 @@ class InteractiveMap(generic.ListView):
                                     'opacity': 1,
                                     'weight': 1,
                                 },
-                                # tooltip=lambda feature: folium.Popup(
-                                #     folium.IFrame(self.create_popup_html(selected_country=selected_country,
-                                #                                          lat=feature['properties']['latitude'],
-                                #                                          lon=feature['properties']['lat'],
-                                #                                          selected_var=selected_var,
-                                #                                          var_value=feature['properties']['variable']),
-                                #                   width=200,
-                                #                   height=200)),
                                 tooltip=folium.GeoJsonTooltip(
                                     fields=[
                                         'variable',
@@ -371,106 +363,188 @@ class InteractiveMap(generic.ListView):
         #                   popup=popup
         #                   ).add_to(map)
 
-    def render_choropleth(self, m, datetime_obj):
+    def render_choropleth(self, m, datetime_obj, selected_country, selected_var):
         # get data
-        world = list(WorldBorder.objects.values('iso2', geometry=F('mpoly')))
-        #
-        iso2_codes = list(WorldBorder.objects.order_by('iso2').values_list('iso2', flat=True))
-        data = [self.get_avg_by_country(datetime_obj=datetime_obj, country_iso2=ISO2_CODE) for ISO2_CODE in iso2_codes]
+        # regions = CountryRegion.objects.filter(country_iso3=selected_country['iso3']).\
+        #     values('country_iso3', 'geometry', 'name')
 
+
+
+        queryset = Location.objects.filter(time=datetime_obj, geometry__intersects=selected_country['mpoly']).annotate(
+            region=Subquery(
+                CountryRegion.objects.filter(geometry__contains=OuterRef('geometry')).values('name')
+            )
+        ).values('region', selected_var)
+
+        queryset = queryset.values('region').annotate(avg=Avg(selected_var))
+
+        region_names = queryset.values_list('region', flat=True)
+
+
+        # queryset = queryset.values('region').annotate(
+        #     region_geometry=Subquery(
+        #         CountryRegion.objects.filter(country_iso3=selected_country['iso3']).values('geometry')[:1]
+        #     )
+        # ).values('region', 'region_geometry')
+
+        qs = CountryRegion.objects.filter(country_iso3=selected_country['iso3'],
+                                          name__in=region_names)\
+            .order_by('name').values('geometry')
+
+
+        # world = list(WorldBorder.objects.values('iso2', geometry=F('mpoly')))
+        # iso2_codes = list(WorldBorder.objects.order_by('iso2').values_list('iso2', flat=True))
+        # data = [self.get_avg_by_country(datetime_obj=datetime_obj, country_iso2=ISO2_CODE) for ISO2_CODE in iso2_codes]
+        #
         # transform data
-        world_gdf = gpd.GeoDataFrame(world, crs='EPSG:4326')
+        world_gdf = gpd.GeoDataFrame(list(qs), crs='EPSG:4326')
         wkt1 = world_gdf.geometry.apply(lambda x: x.wkt)
         world_gdf = gpd.GeoDataFrame(world_gdf, geometry=gpd.GeoSeries.from_wkt(wkt1), crs='EPSG:4326')
 
-        data_df = pd.DataFrame(data)
+
+        data_df = pd.DataFrame(list(queryset))
         data_df.dropna(axis=0, inplace=True)
-        wkt2 = data_df.geometry.apply(lambda x: x.wkt)
-        data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
+
+
+        world_gdf['region'] = data_df['region']
+        world_gdf['avg'] = data_df['avg']
+        # wkt2 = data_df.geometry.apply(lambda x: x.wkt)
+        # data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
         #
-        # initialize choropleth maps
-        self.create_choropleth(map=m, variable='temp', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='viridis')
-        self.create_choropleth(map=m, variable='rel_hum', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Blues')
-        self.create_choropleth(map=m, variable='spec_hum', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Reds')
-        self.create_choropleth(map=m, variable='tcc', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Oranges')
-        self.create_choropleth(map=m, variable='pwat', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Greens')
-        self.create_choropleth(map=m, variable='u_wind', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='PuRd')
-        self.create_choropleth(map=m, variable='v_wind', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='OrRd')
-        self.create_choropleth(map=m, variable='gust', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='GnBu')
+        # # initialize choropleth maps
+        # self.create_choropleth(map=m, variable=selected_var, datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='viridis')
+        # self.create_choropleth(map=m, variable='rel_hum', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Blues')
+        # self.create_choropleth(map=m, variable='spec_hum', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Reds')
+        # self.create_choropleth(map=m, variable='tcc', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Oranges')
+        # self.create_choropleth(map=m, variable='pwat', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='Greens')
+        # self.create_choropleth(map=m, variable='u_wind', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='PuRd')
+        # self.create_choropleth(map=m, variable='v_wind', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='OrRd')
+        # self.create_choropleth(map=m, variable='gust', datetime_obj=datetime_obj, geo_data=world_gdf, data=data_df, color_palette='GnBu')
+        #
+        # temp_data = self.long_name_and_unit('temp')
+        # rel_hum_data = self.long_name_and_unit('rel_hum')
+        # spec_hum_data = self.long_name_and_unit('spec_hum')
+        # tcc_data = self.long_name_and_unit('tcc')
+        # pwat_data = self.long_name_and_unit('pwat')
+        # u_wind_data = self.long_name_and_unit('u_wind')
+        # v_wind_data = self.long_name_and_unit('v_wind')
+        # gust_data = self.long_name_and_unit('gust')
 
-        temp_data = self.long_name_and_unit('temp')
-        rel_hum_data = self.long_name_and_unit('rel_hum')
-        spec_hum_data = self.long_name_and_unit('spec_hum')
-        tcc_data = self.long_name_and_unit('tcc')
-        pwat_data = self.long_name_and_unit('pwat')
-        u_wind_data = self.long_name_and_unit('u_wind')
-        v_wind_data = self.long_name_and_unit('v_wind')
-        gust_data = self.long_name_and_unit('gust')
+        geojson = world_gdf.to_json()
 
-        # add popups
-        geojson1 = folium.features.GeoJson(
-            data=data_gdf,
-            name='Temperature',
-            smooth_factor=2,
-            style_function=lambda x: {'color': 'black', 'fillColor': 'transparent', 'weight': 0.5},
-            tooltip=folium.features.GeoJsonTooltip(
-                fields=['country_name',
-                        'iso2',
-                        'temp_avg',
-                        'rel_hum_avg',
-                        'spec_hum_avg',
-                        'tcc_avg',
-                        'pwat_avg',
-                        'u_wind_avg',
-                        'v_wind_avg',
-                        'gust_avg'],
-                aliases=['Country:',
-                         'Country code:',
-                         f"{temp_data['long_name']} [{temp_data['unit']}] ",
-                         f"{rel_hum_data['long_name']} [{rel_hum_data['unit']}] ",
-                         f"{spec_hum_data['long_name']} [{spec_hum_data['unit']}] ",
-                         f"{tcc_data['long_name']} [{tcc_data['unit']}] ",
-                         f"{pwat_data['long_name']} [{pwat_data['unit']}] ",
-                         f"{u_wind_data['long_name']} [{u_wind_data['unit']}] ",
-                         f"{v_wind_data['long_name']} [{v_wind_data['unit']}] ",
-                         f"{gust_data['long_name']} [{gust_data['unit']}] ", ],
-                localize=True,
-                sticky=False,
-                labels=True,
-                style="""
-                               background-color: #F0EFEF;
-                               border: 2px solid black;
-                               border-radius: 3px;
-                               box-shadow: 3px;
-                           """,
-                max_width=800, ),
-            highlight_function=lambda x: {'weight': 3, 'fillColor': 'grey'},
-        ).add_to(m)
+        # geojson_layer = folium.features.GeoJson(geojson,
+        #                                         name='geojson').add_to(m)
+        #
 
-        # add popups
-        geojson2 = folium.features.GeoJson(
-            data=data_gdf,
-            name='Temperature',
-            smooth_factor=2,
-            style_function=lambda x: {'color': 'black', 'fillColor': 'transparent', 'weight': 0.5},
-            tooltip=folium.features.GeoJsonTooltip(
-                fields=['country_name',
-                        'iso2',
-                        'temp_avg',],
-                aliases=['Country:',
-                         'Country code:',
-                         f"{temp_data['long_name']} [{temp_data['unit']}] ",],
-                localize=True,
-                sticky=False,
-                labels=True,
-                style="""
-                                       background-color: #F0EFEF;
-                                       border: 2px solid black;
-                                       border-radius: 3px;
-                                       box-shadow: 3px;
-                                   """,
-                max_width=800, ),
-            highlight_function=lambda x: {'weight': 3, 'fillColor': 'grey'},
-        ).add_to(m)
+        self.create_choropleth(map=m, variable=selected_var, datetime_obj=datetime_obj, geo_data=geojson, data=world_gdf, color_palette='viridis')
+
+        var_data = self.long_name_and_unit(selected_var)
+        geojson_layer = folium.features.GeoJson(geojson,
+                                                name='Tooltips',
+                                                style_function=lambda x: {'color': 'black', 'fillColor': 'transparent', 'weight': 0.5},
+                                                tooltip=folium.GeoJsonTooltip(
+                                                    fields=[
+                                                        'region',
+                                                        'avg'
+                                                    ],
+                                                    aliases=[
+                                                        "Region name: ",
+                                                        f"{var_data['long_name']} [{var_data['unit']}]: "
+                                                    ],
+                                                    localize=True,
+                                                    sticky=False,
+                                                    labels=True,
+                                                    style="""
+                                               background-color: #F0EFEF;
+                                               border: 2px solid black;
+                                               border-radius: 3px;
+                                               box-shadow: 3px;
+                                                """,
+                                                ),
+                                                ).add_to(m)
+
+        # # add popups
+        # geojson1 = folium.features.GeoJson(
+        #     data=data_gdf,
+        #     name='Temperature',
+        #     smooth_factor=2,
+        #     style_function=lambda x: {'color': 'black', 'fillColor': 'transparent', 'weight': 0.5},
+        #     tooltip=folium.features.GeoJsonTooltip(
+        #         fields=['country_name',
+        #                 'iso2',
+        #                 'temp_avg',
+        #                 'rel_hum_avg',
+        #                 'spec_hum_avg',
+        #                 'tcc_avg',
+        #                 'pwat_avg',
+        #                 'u_wind_avg',
+        #                 'v_wind_avg',
+        #                 'gust_avg'],
+        #         aliases=['Country:',
+        #                  'Country code:',
+        #                  f"{temp_data['long_name']} [{temp_data['unit']}] ",
+        #                  f"{rel_hum_data['long_name']} [{rel_hum_data['unit']}] ",
+        #                  f"{spec_hum_data['long_name']} [{spec_hum_data['unit']}] ",
+        #                  f"{tcc_data['long_name']} [{tcc_data['unit']}] ",
+        #                  f"{pwat_data['long_name']} [{pwat_data['unit']}] ",
+        #                  f"{u_wind_data['long_name']} [{u_wind_data['unit']}] ",
+        #                  f"{v_wind_data['long_name']} [{v_wind_data['unit']}] ",
+        #                  f"{gust_data['long_name']} [{gust_data['unit']}] ", ],
+        #         localize=True,
+        #         sticky=False,
+        #         labels=True,
+        #         style="""
+        #                        background-color: #F0EFEF;
+        #                        border: 2px solid black;
+        #                        border-radius: 3px;
+        #                        box-shadow: 3px;
+        #                    """,
+        #         max_width=800, ),
+        #     highlight_function=lambda x: {'weight': 3, 'fillColor': 'grey'},
+        # ).add_to(m)
+        #
+        # # add popups
+        # geojson2 = folium.features.GeoJson(
+        #     data=data_gdf,
+        #     name='Temperature',
+        #     smooth_factor=2,
+        #     style_function=lambda x: {'color': 'black', 'fillColor': 'transparent', 'weight': 0.5},
+        #     tooltip=folium.features.GeoJsonTooltip(
+        #         fields=['country_name',
+        #                 'iso2',
+        #                 'temp_avg',],
+        #         aliases=['Country:',
+        #                  'Country code:',
+        #                  f"{temp_data['long_name']} [{temp_data['unit']}] ",],
+        #         localize=True,
+        #         sticky=False,
+        #         labels=True,
+        #         style="""
+        #                                background-color: #F0EFEF;
+        #                                border: 2px solid black;
+        #                                border-radius: 3px;
+        #                                box-shadow: 3px;
+        #                            """,
+        #         max_width=800, ),
+        #     highlight_function=lambda x: {'weight': 3, 'fillColor': 'grey'},
+        # ).add_to(m)
 
         folium.LayerControl().add_to(m)
+
+
+
+
+    def create_choropleth(self, map, variable, datetime_obj, geo_data, data, color_palette):
+        var_data = self.long_name_and_unit(variable)
+
+        choropleth = folium.Choropleth(
+            name="Choropleth",
+            geo_data=geo_data,
+            data=data,
+            columns=["region", "avg"],
+            key_on="feature.properties.region",
+            fill_color='YlOrRd',
+            fill_opacity=0.7,
+            line_opacity=0.2,
+            # legend_name=f"Average {var_data['long_name']} [{var_data['unit']}] on {datetime_obj}"
+        ).add_to(map)
