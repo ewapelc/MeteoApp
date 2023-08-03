@@ -11,27 +11,10 @@
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet">
 
-<!--        &lt;!&ndash;Leaflet CSS&ndash;&gt;-->
-<!--        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"-->
-<!--     integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="-->
-<!--     crossorigin=""/>-->
-
-
         <!--Custom CSS-->
         {% load static %}
         <link rel="stylesheet" href="{% static 'map_page.css' %}">
 
-<!--        &lt;!&ndash;Leaflet JS&ndash;&gt;-->
-<!--        &lt;!&ndash; Make sure you put this AFTER Leaflet's CSS &ndash;&gt;-->
-<!-- <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"-->
-<!--     integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="-->
-<!--     crossorigin=""></script>-->
-
-        <!--Set map height-->
-        <style>
-<!--            .map { position: absolute; width: 100%; }-->
-<!--            .user-input {display: inline-block}-->
-        </style>
     </head>
 <body>
 {% include 'stations/navbar_map.html' %}
@@ -63,11 +46,25 @@
             <div class="side-panel">
                 <div>
                    {% if selected_country %}
-                        <p>{{ selected_country.name }}, {{ request.session.date }}, {{ request.session.meteo_var }},
-                        {{ count }}, {{ request.session.visual_type }}</p>
+                    <p><strong>Country: {{ selected_country.name }}</strong></p>
                     {% endif %}
 
-<!--                                    <span>{{ results }}</span>-->
+                   {% if selected_var %}
+                    <p>Variable: {{ selected_var }}</p>
+                    {% endif %}
+
+                   {% if selected_date %}
+                    <p>Date and time: {{ selected_date }} </p>
+                    {% endif %}
+
+                   {% if selected_type %}
+                    <p>Type: {{ selected_type }}</p>
+                    {% endif %}
+
+                    {% if points_count %}
+                    <p>Num of points: {{ points_count }}</p>
+                    {% endif %}
+
                 </div>
                 <hr>
 
