@@ -319,7 +319,6 @@ def render_choropleth(m, datetime_obj, selected_country, selected_var):
 
     # create Choropleth map and add it to the folium map
     choropleth = create_choropleth(
-        m=m,
         variable=selected_var,
         datetime_obj=datetime_obj,
         geo_data=geojson,
@@ -355,7 +354,7 @@ def render_choropleth(m, datetime_obj, selected_country, selected_var):
     ).add_to(m)
 
 
-def create_choropleth(m, variable, datetime_obj, geo_data, data):
+def create_choropleth(variable, datetime_obj, geo_data, data):
     """ Creates and returns a Choropleth Map. """
 
     var_data = long_name_and_unit(variable)
