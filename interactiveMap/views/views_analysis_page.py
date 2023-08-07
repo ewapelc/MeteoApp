@@ -418,10 +418,10 @@ def animation(request):
     return render(request, 'analysis_page/animation.html', context)
 
 
-def clusterization(request):
-    """ Renders the Clusterization tab. """
+def clustering(request):
+    """ Renders the Clustering tab. """
 
-    return render(request, 'analysis_page/clusterization.html')
+    return render(request, 'analysis_page/clustering.html')
 
 
 def long_name_and_unit(var):

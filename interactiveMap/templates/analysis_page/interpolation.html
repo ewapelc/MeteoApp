@@ -1,10 +1,11 @@
 {% include 'analysis_page/layout.html' %}
 
 <h1>Interpolations</h1>
-
-<h3>Interpolacja między punktami, krieging, wypełnianie sześcienne</h3>
+<p>Some description.</p>
+<hr>
 
 <div class='interpolation-plot'>
+    <h3>Interpolacja między punktami, krieging, wypełnianie sześcienne</h3>
     <span>
         1. Binning
     </span>
@@ -52,7 +53,6 @@
         </form>
     </div>
 
-    <hr>
     <p><strong>Selected country:</strong></p>
     {% if chosen_country %}
         <p>{{ chosen_country.name }}</p>
@@ -67,8 +67,6 @@
     {% if chosen_date %}
         <p>{{ chosen_date }}</p>
     {% endif %}
-
-    <hr>
 
     <div class="plot">
 <!--        {% autoescape off %}-->

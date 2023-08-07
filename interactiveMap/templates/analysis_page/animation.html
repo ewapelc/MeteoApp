@@ -1,14 +1,16 @@
 {% load static %}
 {% include 'analysis_page/layout.html' %}
 
-<h1>Animations</h1>
+<h1>Animation</h1>
+<p>Some description.</p>
+<hr>
 
 <div class="timeseries-plot">
+    <h3>Some text</h3>
     <span>
         Animacja - Spatial Binning dla wszystkich cykli <br>
         plotly.express?
     </span>
-    <hr>
 
    <div class="form">
         <form method="post">
@@ -41,7 +43,6 @@
         </form>
     </div>
 
-    <hr>
     <p><strong>Selected country:</strong></p>
     {% if chosen_country %}
         <p>{{ chosen_country.name }}</p>
@@ -52,7 +53,6 @@
         <p>{{ chosen_var }}</p>
     {% endif %}
 
-    <hr>
 
     <div class="plot">
         {% if animation_gif %}

@@ -5,11 +5,11 @@
         <title>Thesis Project | Ewa Pelc</title>
 
         {% load static %}
-        <link rel="shortcut icon" type="image/png" href="{% static 'images/favicon.png' %}" >
+        <link rel="shortcut icon" type="image/png" href="{% static 'images/earth.png' %}" >
 
         <!--Custom CSS-->
         {% load static %}
-        <link rel="stylesheet" href="{% static 'analysis_page2.css' %}">
+        <link rel="stylesheet" href="{% static 'analysis_page4.css' %}">
     </head>
 <body>
 {% include 'stations/navbar.html' %}
@@ -19,10 +19,10 @@
     <div class="menu">
         <ul>
           <a href="/analysis">Getting Started</a>
-          <a href="/analysis/timeseries">Timeseries</a>
-          <a href="/analysis/interpolation">Interpolation</a>
+          <a href="/analysis/timeseries">Time Series</a>
           <a href="/analysis/animation">Animation</a>
-            <a href="/analysis/clusterization">Clusterization</a>
+          <a href="/analysis/interpolation">Interpolation</a>
+          <a href="/analysis/clustering">Clustering</a>
         </ul>
     </div>
 

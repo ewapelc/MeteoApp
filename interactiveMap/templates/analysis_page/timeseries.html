@@ -1,8 +1,11 @@
 {% include 'analysis_page/layout.html' %}
 
-<h1>Timeseries</h1>
+<h1>Time Series</h1>
+<p>This tab explores the possibilities of creating time series from the analyzed data.</p>
+<hr>
 
 <div class="timeseries-plot">
+    <h3>Test</h3>
     <span>
     1. INTERAKTYWNE
     Single-select: wybór zmiennej
@@ -17,7 +20,6 @@
     pod spodem wyświetlają się jakieś statystyki
     porównawcze
     </span>
-    <hr>
 
     <div class="form">
         <form method="post">
@@ -49,7 +51,7 @@
             <input type="submit" name="plot-1" value="Submit">
         </form>
     </div>
-    <hr>
+
     <p><strong>Selected countries:</strong></p>
     {% if chosen_countries %}
         {% for country in chosen_countries %}
@@ -62,7 +64,6 @@
         <p>{{ chosen_var }}</p>
     {% endif %}
 
-    <hr>
 
     <div class="plot">
         {% autoescape off %}
@@ -72,6 +73,7 @@
 </div>
 
 <div class="timeseries-plot">
+    <h3>Test</h3>
     <span>
         2.
         zestawienie dla wszystkich
@@ -109,7 +111,6 @@
         </form>
     </div>
 
-    <hr>
     <p><strong>Selected country:</strong></p>
     {% if chosen_country2 %}
         <p>{{ chosen_country2.name }}</p>
@@ -138,17 +139,15 @@
         {% endautoescape %}
     </div>
 
-
-    <hr>
 </div>
 
 
 <div class="timeseries-plot">
+    <h3>Test</h3>
     <span>
     5.
     Zestawienie ze sobą zmiennych temperatura i wilgotność -  WYBÓR KRAJU
     </span>
-    <hr>
         <div class="form">
         <form method="post">
         {% csrf_token %}
@@ -168,7 +167,6 @@
         </form>
     </div>
 
-    <hr>
     <p><strong>Selected country:</strong></p>
     {% if chosen_country5 %}
         <p>{{ chosen_country5.name }}</p>
