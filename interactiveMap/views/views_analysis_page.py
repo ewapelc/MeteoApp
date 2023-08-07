@@ -150,7 +150,6 @@ def timeseries(request):
             # save user selection
             context['chosen_country2'] = WorldBorder.objects.filter(id=request.POST.get('country2')).values().last()
             context['chosen_var2'] = request.POST.get('variable2')
-            context['regions'] = CountryRegion.objects.filter(country_iso3=context['chosen_country2']['iso3']).values()
 
             # filter the data for regions
             queryset = Location.objects.filter(
@@ -158,6 +157,7 @@ def timeseries(request):
             ).annotate(
                 region=Subquery(
                     CountryRegion.objects.filter(
+                        country_iso3=context['chosen_country2']['iso3'],
                         geometry__contains=OuterRef('geometry')
                     ).values('name')
                 )

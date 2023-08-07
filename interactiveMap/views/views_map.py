@@ -291,6 +291,7 @@ def render_choropleth(m, datetime_obj, selected_country, selected_var):
     ).annotate(
         region=Subquery(
             CountryRegion.objects.filter(
+                country_iso3=selected_country['iso3'],
                 geometry__contains=OuterRef('geometry')
             ).values('name')
         )
