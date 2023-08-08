@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@200;300;400;500;600;700&display=swap');
+*{
+  margin: 0;
+  padding: 0;
+  font-family: "Open Sans" , sans-serif;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+  line-height: 1.1;
+}
+
+section {
+    display: grid;
+    place-content: center;
+    min-height: 100vh;
+}
+
+#data, #map {
+    background-color: rgb(230, 230, 255);
+}
+
+.footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 30vh;
+    border-top: 1px solid;
+    border-top-color: rgba(227,232,237,1.00);
+    font-size: 12px;
+    color: #20293d;
+}

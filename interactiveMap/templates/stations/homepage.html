@@ -5,22 +5,26 @@
         <title>Thesis Project | Ewa Pelc</title>
 
         {% load static %}
-        <link rel="shortcut icon" type="image/png" href="{% static 'images/favicon.png' %}" >
+        <link rel="shortcut icon" type="image/png" href="{% static 'images/world-favicon.png' %}" >
 
         <!--Custom CSS-->
         {% load static %}
-        <link rel="stylesheet" href="{% static 'homepage1.css' %}">
+        <link rel="stylesheet" href="{% static 'homepage2.css' %}">
     </head>
 <body>
 {% include 'stations/navbar.html' %}
 
     <section id="about">
         <h1>About project</h1>
-        {% if variables %}
-            {% for var in variables %}
-                {{ var }}
-            {% endfor %}
-        {% endif %}
+        <p>Mentions thesis and basic point of project.</p>
+    </section>
+    <section id="data">
+        <h1>NOAA Data</h1>
+        <p>NOAA server, GFS 0.25 Degree dataset and data cycles - quick overview.</p>
+    </section>
+    <section id="explanation">
+        <h1>Explore</h1>
+        <p>Briefly explains possibilities.</p>
     </section>
     <section id="map">
         <h1>Interactive map</h1>
@@ -30,6 +34,9 @@
         <h1>Analysis Page</h1>
         <a href="/analysis">Go to Analysis page</a>
     </section>
+    <div class="footer">
+        Copyright &copy 2023 Ewa Pelc. All rights reserved.
+    </div>
 
 </body>
 </html>

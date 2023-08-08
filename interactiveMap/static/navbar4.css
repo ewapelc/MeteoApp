@@ -24,23 +24,27 @@ navbar {
 
 navbar ul {
     position: relative;
-    margin-left: 200px;
+    margin-left: 50px;
 }
 
 
 navbar ul a {
     text-align: left;
     display: inline-block;
-    margin: 0 2em 0 0;
+    margin: 0 4em 0 0;
     font-size: 14px;
     text-decoration: none;
     color: #333333;
     padding: 4px 8px;
 }
 
-navbar ul a:hover {
+navbar ul a:hover:not(:first-child) {
     background-color: rgba(0,138,230, 0.1);
     border-radius: 4px;
+    color: blue;
+}
+
+.active {
     color: blue;
 }
 
