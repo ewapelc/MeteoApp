@@ -8,11 +8,11 @@ The Time Series tab empowers users to select countries and variables, generating
 <div class="timeseries-plot">
     <h3>Time Series Comparison: Variable Across Countries</h3>
     <span>
-        Explore how meteorological variables vary across different countries for within a fixed date range.
+        Explore how meteorological variables vary across different countries within a fixed date range.
     </span>
-<!--    <div class="info">-->
-<!--        <p><strong>Please note:</strong> you can select multiple countries from the dropdown list by holding down the Ctrl key while making your choices.</p>-->
-<!--    </div>-->
+    <div class="info">
+        <p><strong>Please note:</strong> you can select multiple countries from the dropdown list.</p>
+    </div>
 
     <div class="form">
         <form method="post">
@@ -49,20 +49,7 @@ The Time Series tab empowers users to select countries and variables, generating
         <script>
             new MultiSelectTag('country')  // id
         </script>
-
     </div>
-
-<!--    <p><strong>Selected countries:</strong></p>-->
-<!--    {% if chosen_countries %}-->
-<!--        {% for country in chosen_countries %}-->
-<!--            <p>{{ country.name }}</p>-->
-<!--        {% endfor %}-->
-<!--    {% endif %}-->
-
-<!--    <p><strong>Selected variable:</strong></p>-->
-<!--    {% if chosen_var %}-->
-<!--        <p>{{ chosen_var }}</p>-->
-<!--    {% endif %}-->
 
 
     <div class="plot">
@@ -72,11 +59,15 @@ The Time Series tab empowers users to select countries and variables, generating
     </div>
 </div>
 
+
 <div class="timeseries-plot">
     <h3>Time Series Comparison: Variable Across Regions</h3>
     <span>
         Explore how meteorological variables vary across different regions (provinces) of a selected country within a fixed date range.
     </span>
+    <div class="info">
+        <p><strong>Please note:</strong> <i>Plotly</i> chart allows you to <b>hover over data points</b> for detailed insights and seamlessly <b>select specific date ranges.</b> <br><br>To return to the original plot, simply refresh the page or utilize the <b>"Autoscale" button</b> conveniently located on the chart interface.</p>
+    </div>
 
     <div class="form">
         <form method="post">
@@ -109,17 +100,7 @@ The Time Series tab empowers users to select countries and variables, generating
         </form>
     </div>
 
-<!--    <p><strong>Selected country:</strong></p>-->
-<!--    {% if chosen_country2 %}-->
-<!--        <p>{{ chosen_country2.name }}</p>-->
-<!--    {% endif %}-->
-
-<!--    <p><strong>Selected variable:</strong></p>-->
-<!--    {% if chosen_var2 %}-->
-<!--        <p>{{ chosen_var2 }}</p>-->
-<!--    {% endif %}-->
-
-        <div class="plot">
+    <div class="plot">
         {% autoescape off %}
         {{ timeseries2|safe }}
         {% endautoescape %}
@@ -133,6 +114,9 @@ The Time Series tab empowers users to select countries and variables, generating
     <span>
         Explore the dynamic interplay of meteorological variables within a chosen country and fixed date range.
     </span>
+    <div class="info">
+        <p><strong>Please note:</strong> you can select multiple variables from the dropdown list.</p>
+    </div>
 
         <div class="form">
         <form method="post">
@@ -153,10 +137,6 @@ The Time Series tab empowers users to select countries and variables, generating
         </form>
     </div>
 
-<!--    <p><strong>Selected country:</strong></p>-->
-<!--    {% if chosen_country5 %}-->
-<!--        <p>{{ chosen_country5.name }}</p>-->
-<!--    {% endif %}-->
 
     <div class="plot">
         {% autoescape off %}

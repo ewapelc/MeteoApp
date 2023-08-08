@@ -74,8 +74,8 @@ def timeseries(request):
             fig = px.line(
                 x=timezone_corrected_l,
                 y=meteo_vars,
-                title=f'Average {var_data["long_name"]} [{var_data["unit"]}] in Selected Countries',
-                labels={"x": "Date", "value": var_data['long_name'] + ' [' + var_data['unit'] + ']'},
+                title=f'Multi-Country Average {var_data["long_name"]} [{var_data["unit"]}] Time Series',
+                labels={"x": "Time of Day (UTC)", "value": var_data['long_name'] + ' [' + var_data['unit'] + ']'},
                 markers=True
             )
             fig.update_layout(legend_title_text='Country')
@@ -187,8 +187,8 @@ def timeseries(request):
                 y=meteo_var,
                 color=region,
                 markers=True,
-                title=f'Average {var_data["long_name"]} [{var_data["unit"]}] in each region of selected country',
-                labels={"x": "Date", "y": var_data['long_name'] + ' [' + var_data['unit'] + ']'},
+                title=f'Country Region-wise Average {var_data["long_name"]} [{var_data["unit"]}] Time Series.',
+                labels={"x": "Time of Day (UTC)", "y": var_data['long_name'] + ' [' + var_data['unit'] + ']'},
             )
             fig.update_layout(legend_title_text='Regions')
 
@@ -272,7 +272,7 @@ def get_graph():
     return graph
 
 
-def get_plot(country_gdf, data_gdf, chosen_var, chosen_date):
+def get_plot(country_gdf, data_gdf, chosen_country, chosen_var, chosen_date):
     """ Creates and returns a matplotlib spatial-binning plot from custom polygons. """
 
     plt.switch_backend('AGG')
@@ -304,23 +304,23 @@ def get_plot(country_gdf, data_gdf, chosen_var, chosen_date):
     poly_df.plot(
         ax=ax,
         edgecolor="white",
-        linewidth=0.5,
+        linewidth=0.1,
         column="variable",
         cmap="viridis",
-        alpha=.5,
         legend=True
     )
-
-    # plot original points
-    data_gdf.geometry.plot(ax=ax, color='white', markersize=1)
 
     # add details
     var_data = long_name_and_unit(chosen_var)
     date_str = datetime.strftime(chosen_date + timedelta(hours=2), "%d-%m-%Y %H:%M")
     ax.set_title(
-        f'{var_data["long_name"]} [{var_data["unit"]}] on {date_str}',
-        fontdict={'fontsize': '15', 'fontweight': '3'}
+        f'{var_data["long_name"]} [{var_data["unit"]}] in {chosen_country["name"]} at {date_str}',
+        fontdict={'fontsize': '15', 'fontweight': '2'},
+        pad=15
     )
+    ax.set_xlabel(u"Longitude [\N{DEGREE SIGN}]")
+    ax.set_ylabel(u"Latitude [\N{DEGREE SIGN}]")
+
     plt.tight_layout()
 
     # # convert the plot into memory buffer - needed for static plots
@@ -372,7 +372,7 @@ def animation(request):
                 wkt2 = data_df.geometry.apply(lambda x: x.wkt)
                 data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
 
-                fig = get_plot(country_gdf, data_gdf, context['chosen_var'], date['time'])
+                fig = get_plot(country_gdf, data_gdf, context['chosen_country'], context['chosen_var'], date['time'])
 
                 # file destination
                 date_str = datetime.strftime(date['time'] + timedelta(hours=2), "%d%m%Y-t%Hz")
