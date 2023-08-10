@@ -10,17 +10,14 @@ from PIL import Image
 import plotly.express as px
 
 from interactiveMap.models import Location, WorldBorder, CountryRegion
-from django.db.models import Subquery, Avg, F, OuterRef
+from django.db.models import Subquery, Avg, F, OuterRef, Min, Max
 from django.shortcuts import render
 
 
 def home(request):
     """ Renders home page. """
 
-    context = {
-        'variables': ['one', 'two', 'three']
-    }
-    return render(request, 'stations/homepage.html', context)
+    return render(request, 'stations/homepage.html')
 
 
 def getting_started(request):
@@ -300,14 +297,21 @@ def get_plot(country_gdf, data_gdf, chosen_country, chosen_var, chosen_date):
     poly_df = gpd.GeoDataFrame({'geometry': all_poly}, crs="EPSG:4326")
     poly_df['variable'] = data_gdf[chosen_var]
 
+    # min, max values for normalization
+    vmin = Location.objects.filter(
+        geometry__intersects=chosen_country['mpoly']
+    ).aggregate(min=Min(chosen_var))['min']
+    vmax = Location.objects.filter(
+        geometry__intersects=chosen_country['mpoly']
+    ).aggregate(max=Max(chosen_var))['max']
+
     # plot the custom polygons, the fill color is mapped from the variable
     poly_df.plot(
         ax=ax,
         edgecolor="white",
         linewidth=0.1,
         column="variable",
-        cmap="viridis",
-        legend=True
+        cmap="viridis"
     )
 
     # add details
@@ -320,6 +324,11 @@ def get_plot(country_gdf, data_gdf, chosen_country, chosen_var, chosen_date):
     )
     ax.set_xlabel(u"Longitude [\N{DEGREE SIGN}]")
     ax.set_ylabel(u"Latitude [\N{DEGREE SIGN}]")
+
+    # normalized legend
+    sm = plt.cm.ScalarMappable(cmap='viridis', norm=plt.Normalize(vmin=vmin, vmax=vmax))
+    sm._A = []
+    fig.colorbar(sm)
 
     plt.tight_layout()
 

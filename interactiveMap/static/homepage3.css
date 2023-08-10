@@ -12,6 +12,7 @@ section {
     display: grid;
     place-content: center;
     min-height: 100vh;
+    padding: 100px 300px;
 }
 
 #data, #map {

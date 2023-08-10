@@ -1,4 +1,8 @@
 {% load static %}
+
+<!--Custom template tags-->
+{% load variable_long_name %}
+
 {% include 'analysis_page/layout.html' %}
 
 <h1>Animation</h1>
@@ -35,7 +39,7 @@
                     <option selected disabled style="display:none;" value="">Select...</option>
                     {% if variables %}
                         {% for var in variables %}
-                            <option value="{{ var }}">{{ var }}</option>
+                            <option value="{{ var }}">{{ var|long_name }}</option>
                         {% endfor %}
                     {% endif %}
                 </select>

@@ -1,5 +1,8 @@
 {% include 'analysis_page/layout.html' %}
 
+<!--Custom template tags-->
+{% load variable_long_name %}
+
 <h1>Time Series</h1>
 <p>
 The Time Series tab empowers users to select countries and variables, generating custom time series plots that vividly depict the evolution of chosen meteorological variables over time.</p>
@@ -35,7 +38,7 @@ The Time Series tab empowers users to select countries and variables, generating
                     <option selected disabled style="display:none;" value=""></option>
                     {% if variables %}
                         {% for var in variables %}
-                            <option value="{{ var }}">{{ var }}</option>
+                            <option value="{{ var }}">{{ var|long_name }}</option>
                         {% endfor %}
                     {% endif %}
                 </select>
@@ -90,7 +93,7 @@ The Time Series tab empowers users to select countries and variables, generating
                     <option selected disabled style="display:none;" value="">Select...</option>
                     {% if variables %}
                         {% for var in variables %}
-                            <option value="{{ var }}">{{ var }}</option>
+                            <option value="{{ var }}">{{ var|long_name }}</option>
                         {% endfor %}
                     {% endif %}
                 </select>

@@ -44,9 +44,6 @@ navbar ul a:hover:not(:first-child) {
     color: blue;
 }
 
-.active {
-    color: blue;
-}
 
 .navbar-img {
     width: 40px;

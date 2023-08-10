@@ -98,6 +98,7 @@ def map_page(request):
             attr='Esri.WorldImagery'
         ).add_to(m)
 
+        # add a layer to the folium map based on visualisation type selected by the user
         if context['selected_type'] == 'points':
             render_polygons(
                 m=m,

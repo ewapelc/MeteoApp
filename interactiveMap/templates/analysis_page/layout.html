@@ -9,7 +9,7 @@
 
         <!--Custom CSS-->
         {% load static %}
-        <link rel="stylesheet" href="{% static 'analysis_page1.css' %}">
+        <link rel="stylesheet" href="{% static 'analysis_page2.css' %}">
 
         <!--Multiselect field js library-->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag/dist/css/multi-select-tag.css">
@@ -17,6 +17,11 @@
     </head>
 <body>
 {% include 'stations/navbar.html' %}
+<script>
+const tab = document.getElementById('analysis');
+tab.style.borderBottom = "1px solid";
+tab.style.borderBottomColor = "rgba(227,232,237,1.00)";
+</script>
 
 
 <div class="content-wrapper">
@@ -24,10 +29,10 @@
     <div class="menu">
         <ul>
           <a href="/analysis">Getting Started</a>
-          <a href="/analysis/timeseries">Time Series</a>
-          <a href="/analysis/animation">Animation</a>
-          <a href="/analysis/interpolation">Interpolation</a>
-          <a href="/analysis/clustering">Clustering</a>
+          <a href="/analysis/timeseries" >Time Series</a>
+          <a href="/analysis/animation" >Animation</a>
+          <a href="/analysis/interpolation" >Interpolation</a>
+          <a href="/analysis/clustering" >Clustering</a>
         </ul>
     </div>
 
