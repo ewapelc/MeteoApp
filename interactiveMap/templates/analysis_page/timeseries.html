@@ -3,6 +3,11 @@
 <!--Custom template tags-->
 {% load variable_long_name %}
 
+<script>
+const v = document.getElementById('timeseries');
+v.style.fontWeight = 550;
+</script>
+
 <h1>Time Series</h1>
 <p>
 The Time Series tab empowers users to select countries and variables, generating custom time series plots that vividly depict the evolution of chosen meteorological variables over time.</p>
@@ -78,7 +83,7 @@ The Time Series tab empowers users to select countries and variables, generating
             <div class="user-input">
                 <label for="country2">Select country:</label>
                 <select id="country2" name="country2" required>
-                    <option selected disabled style="display:none;" value="">Select...</option>
+                    <option selected disabled style="display:none;" value=""></option>
                     {% if countries %}
                         {% for country in countries %}
                             <option value="{{ country.id }}">{{ country.name }}</option>
@@ -90,7 +95,7 @@ The Time Series tab empowers users to select countries and variables, generating
             <div class="user-input">
                 <label for="variable2">Select variable:</label>
                 <select id="variable2" name="variable2" required>
-                    <option selected disabled style="display:none;" value="">Select...</option>
+                    <option selected disabled style="display:none;" value=""></option>
                     {% if variables %}
                         {% for var in variables %}
                             <option value="{{ var }}">{{ var|long_name }}</option>
@@ -127,7 +132,7 @@ The Time Series tab empowers users to select countries and variables, generating
             <div class="user-input">
                 <label for="country5">Select country:</label>
                 <select id="country5" name="country5" required>
-                    <option selected disabled style="display:none;" value="">Select...</option>
+                    <option selected disabled style="display:none;" value=""></option>
                     {% if countries %}
                         {% for country in countries %}
                             <option value="{{ country.id }}">{{ country.name }}</option>
@@ -136,8 +141,24 @@ The Time Series tab empowers users to select countries and variables, generating
                 </select>
             </div>
 
+            <div class="user-input">
+                <label for="variable5">Select variables:</label>
+                <select id="variable5" name="variable5[]" multiple required >
+<!--                    <option selected disabled style="display:none;" value="">Select...</option>-->
+                    {% if variables %}
+                        {% for var in variables %}
+                            <option value="{{ var }}">{{ var|long_name }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
             <input type="submit" name="plot-5" value="Submit">
         </form>
+
+        <script>
+            new MultiSelectTag('variable5')  // id
+        </script>
     </div>
 
 

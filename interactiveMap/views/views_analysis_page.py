@@ -95,43 +95,48 @@ def timeseries(request):
         elif 'plot-5' in request.POST:
             # save user selection
             context['chosen_country5'] = WorldBorder.objects.filter(id=request.POST.get('country5')).values().last()
+            context['chosen_variables5'] = request.POST.getlist('variable5[]')
 
-            # get data
-            queryset = Location.objects.filter(
-                geometry__intersects=context['chosen_country5']['mpoly']
-            ).values('time').annotate(
-                avg_temp=Avg('temp')
-            ).annotate(
-                avg_rel_hum=Avg('rel_hum')
-            ).annotate(
-                avg_spec_hum=Avg('spec_hum')
-            ).order_by()
-            temp = queryset.values_list('avg_temp', flat=True)
-            rel_hum = queryset.values_list('avg_rel_hum', flat=True)
-            spec_hum = queryset.values_list('avg_spec_hum', flat=True)
-            meteo_vars = [temp, rel_hum, spec_hum]
+            meteo_vars = []
+            i = 0
+            time = 0
+            for variable in context['chosen_variables5']:
+                if i == 0:
+                    res = extract_var(
+                        country=context['chosen_country5'],
+                        meteo_variable=variable
+                    )
+                    time = res['time']
+                    meteo_var = res['meteo_var']
+                else:
+                    meteo_var = extract_var(
+                        country=context['chosen_country5'],
+                        meteo_variable=variable
+                    )['meteo_var']
+                meteo_vars.append(meteo_var)
 
-            # convert timezone
-            time = queryset.values_list('time', flat=True)
+            # transform timezone
             timezone_corrected_l = [datetime.strptime(
                 datetime.strftime(TIME + timedelta(hours=2), "%d-%m-%Y %H:%M"),
                 "%d-%m-%Y %H:%M"
             ) for TIME in time]
 
-            # plot the time series
+            # plot the time series for selected countries
             fig = px.line(
                 x=timezone_corrected_l,
                 y=meteo_vars,
-                title=f'Comparison of Average Values of Meteorological Variables in {context["chosen_country5"]["name"]}',
-                labels={"x": "Date", "value": "Variables"},
+                title=f'Comparison of Average Meteorological Trends in {context["chosen_country5"]["name"]} Time Series',
+                labels={"x": "Time of Day (UTC)", "value": "Average Value"},
                 markers=True
             )
-            fig.update_layout(legend_title_text='Variable')
+            fig.update_layout(legend_title_text='Variable with Unit')
 
             # update traces
-            var_names = ['Temperature [K]', 'Relative Humidity [%]', 'Specific Humidity [kg/kg]']
-            old_names = ['wide_variable_' + str(num) for num in list(range(len(var_names)))]
-            new_names = {old_names[i]: var_names[i] for i in range(len(old_names))}
+            variable_names = list(context['chosen_variables5'])
+            old_names = ['wide_variable_' + str(num) for num in list(range(len(variable_names)))]
+            full_names = ["".join([long_name_and_unit(var)["long_name"], " [", long_name_and_unit(var)["unit"], "]"])
+                          for var in variable_names]
+            new_names = {old_names[i]: full_names[i] for i in range(len(old_names))}
             fig.for_each_trace(
                 lambda t: t.update(
                     name=new_names[t.name],
@@ -184,7 +189,7 @@ def timeseries(request):
                 y=meteo_var,
                 color=region,
                 markers=True,
-                title=f'Country Region-wise Average {var_data["long_name"]} [{var_data["unit"]}] Time Series.',
+                title=f'Country Region-wise Average {var_data["long_name"]} [{var_data["unit"]}] Time Series',
                 labels={"x": "Time of Day (UTC)", "y": var_data['long_name'] + ' [' + var_data['unit'] + ']'},
             )
             fig.update_layout(legend_title_text='Regions')

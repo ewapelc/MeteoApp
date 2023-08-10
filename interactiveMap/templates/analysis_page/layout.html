@@ -19,8 +19,7 @@
 {% include 'stations/navbar.html' %}
 <script>
 const tab = document.getElementById('analysis');
-tab.style.borderBottom = "1px solid";
-tab.style.borderBottomColor = "rgba(227,232,237,1.00)";
+tab.style.fontWeight = 550;
 </script>
 
 
@@ -28,11 +27,11 @@ tab.style.borderBottomColor = "rgba(227,232,237,1.00)";
 
     <div class="menu">
         <ul>
-          <a href="/analysis">Getting Started</a>
-          <a href="/analysis/timeseries" >Time Series</a>
-          <a href="/analysis/animation" >Animation</a>
-          <a href="/analysis/interpolation" >Interpolation</a>
-          <a href="/analysis/clustering" >Clustering</a>
+          <a href="/analysis" id="getting-started">Getting Started</a>
+          <a href="/analysis/timeseries" id="timeseries">Time Series</a>
+          <a href="/analysis/animation" id="animation">Animation</a>
+          <a href="/analysis/interpolation" id="interpolation">Interpolation</a>
+          <a href="/analysis/clustering" id="clustering">Clustering</a>
         </ul>
     </div>
 
