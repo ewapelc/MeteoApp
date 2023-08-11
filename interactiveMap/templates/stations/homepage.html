@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns="http://www.w3.org/1999/html">
     <head>
         <meta charset="utf-8">
         <title>Thesis Project | Ewa Pelc</title>
@@ -9,34 +9,121 @@
 
         <!--Custom CSS-->
         {% load static %}
-        <link rel="stylesheet" href="{% static 'homepage3.css' %}">
+        <link rel="stylesheet" href="{% static 'homepage2.css' %}">
     </head>
 <body>
 {% include 'stations/navbar.html' %}
 
     <section id="about">
-        <h1>About project</h1>
-        <p>This is the thesis project, marking the culmination of my studies. The primary objective of this application is to provide valuable insights into spatial meteorological data by employing a diverse range of analysis and visualization methods, enabling users to gain a comprehensive understanding of dynamic weather patterns and trends.</p>
+        <h3 id="project-name"><i>"Processing, Analysis, and Visualization of Global Meteorological Data"</i></h3>
+        <p id="thesis-purpose">This is the thesis project, marking the culmination of my studies. The primary objective of this application is to provide valuable insights into spatial meteorological data by employing a diverse range of analysis and visualization methods, enabling users to gain a comprehensive understanding of dynamic weather patterns and trends.</p>
     </section>
     <section id="data">
-        <h1>NOAA Data</h1>
-        <p>NOAA server, GFS 0.25 Degree dataset and data cycles - quick overview.</p>
+<!--        <h1>NOAA Data</h1>-->
+<!--        <p>NOAA server, GFS 0.25 Degree dataset and data cycles - quick overview.</p>-->
+        <div class="data-section-container">
+            <div class="pages">
+                <div class="page one">
+                    <h1>Unveiling the Data Source</h1>
+                    <div>
+                        <button onclick="slide('next')">Next</button>
+                    </div>
+
+                    <p>
+                        The dataset at the core of this project traces its origins back to NOAA (National Oceanic and Atmospheric Administration) under the U.S. Department of Commerce.
+                        <br><br>
+                        Addressing a growing demand for remote access to substantial numerical weather predictions and global climate models, NCDC (National Climatic Data Center), NCEP (National Centers for Environmental Prediction), and GFDL (Geophysical Fluid Dynamics Laboratory), all operating under the umbrella of NOAA, came together to pioneer the NOMADS project.
+                        <br><br>
+                        Within the NOMADS server, an extensive array of diverse datasets is available, each rooted in distinct models encompassing global, regional, climate, ocean, space, or external perspectives. The NOMADS platform offers a multitude of possibilities, inviting users to delve into a rich repository of meteorological insights.
+                    </p>
+                </div>
+                <div class="page two">
+                    <h1>Introducing the Chosen Dataset: Composition and Purpose</h1>
+                    <div>
+                        <button onclick="slide('prev')">Prev</button>
+                    </div>
+                    <div>
+                        <button onclick="slide('next')">Next</button>
+                    </div>
+
+                    <p>
+                        Chosen with the project's objectives in mind, the <i>GFS 0.25 Degree</i> Dataset (Global Forecast System 0.25 Degree Grid) has been thoughtfully curated to illuminate complex meteorological insights.
+                        <br><br>
+                        This dataset serves as a foundational component of NCEP's extensive numerical guidance, facilitating precise global atmospheric and wave predictions at a 0.25-degree resolution.
+                        <br><br>
+                        Within the GFS framework, a data assimilation system operates seamlessly alongside forecast models, collectively addressing both atmospheric conditions and ocean wave dynamics.
+                        </p>
+                </div>
+                <div class="page three">
+                    <h1>Dimensions of Insight: Spatial and Temporal Aspects</h1>
+                    <div>
+                        <button onclick="slide('prev')">Prev</button>
+                    </div>
+
+                    <p>
+                        <i>Spatial Resolution:</i>
+                        <br>
+                        GFS output is posted to a 0.25-degree equally spaced longitude/latitude grid and is divided into 127 vertical atmospheric layers. This project specifically concentrates on the XYZ layer for all variables, highlighting a distinct aspect of analysis.
+                        <br><br>
+                        <i>Temporal Resolution:</i>
+                        <br>
+                        The GFS operates four times a day (at 12 AM, 6 AM, 12 PM, and 6 PM UTC time), delivering forecasts up to 16 days in advance. The temporal resolution of forecasts, available on the server, ranges from 1 hour up to 120 hours, transitioning to 3-hour intervals from days 5 to 16. Frequent data collection empowers users to anticipate and dissect meteorological trends.
+                        <br><br>
+                        <i>Data Exploration:</i>
+                        <br>
+                        In this project, emphasis is placed on utilizing original measured data for each cycle, rather than forecasts. This approach ensures a comprehensive and accurate analysis of the dataset, providing insights into the dynamic interplay of atmospheric conditions.
+                    </p>
+                </div>
+            </div>
+        </div>
     </section>
     <section id="explanation">
-        <h1>Explore</h1>
-        <p>Briefly explains possibilities.</p>
+        <h1>Methods Employed: Interactive Map and Data Exploration Modules</h1>
+        <p>
+            The project's aim is realized through the utilization of two core modules: the Interactive Map Module and the Data Exploration Module.
+            <br><br>
+            These modules collectively encompass a diverse array of data analysis and visualization techniques, including:
+            <br><br>
+        </p>
+        <div id="methods-list">
+            <ul>
+                <li>Time Series Analysis</li>
+                <li>Animation Technique</li>
+                <li>Spatial Interpolation</li>
+                <li>Cluster Analysis</li>
+                <li>Spatial Binning Technique</li>
+                <li>Choropleth Map</li>
+            </ul>
+        </div>
     </section>
     <section id="map">
         <h1>Interactive map</h1>
+        <p>To be described</p>
         <a href="/map">Go to Map</a>
     </section>
     <section id="analysis">
         <h1>Analysis Page</h1>
+        <p>To be described</p>
         <a href="/analysis">Go to Analysis page</a>
     </section>
     <div class="footer">
         Copyright &copy 2023 Ewa Pelc. All rights reserved.
     </div>
+
+    <script>
+        const pages = document.querySelectorAll(".page");
+        const translateAmount = 100;
+        let translate = 0;
+
+        slide = (direction) => {
+            direction === "next" ? translate -= translateAmount : translate += translateAmount;
+
+            pages.forEach(
+                pages => (pages.style.transform = `translateX(${translate}%)`)
+            )
+        }
+
+    </script>
 
 </body>
 </html>
