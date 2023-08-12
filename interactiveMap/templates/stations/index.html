@@ -8,214 +8,119 @@
         <link rel="shortcut icon" type="image/png" href="{% static 'images/world-favicon.png' %}" >
 
         <!--Google icons-->
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-      rel="stylesheet">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
         <!--Custom CSS-->
         {% load static %}
-        <link rel="stylesheet" href="{% static 'map_page.css' %}">
+        <link rel="stylesheet" href="{% static 'map_page1.css' %}">
+
+        <!--Custom template tags-->
+        {% load variable_long_name %}
 
     </head>
 <body>
 {% include 'stations/navbar_map.html' %}
 
 
-    <div class="wrapper side-panel-open">
-        <div class="folium_map" style="margin-left: 50px;">
-            {{ map|safe }}
-        </div>
+    <div class="wrapper">
+        <div class="row">
+            <div class="folium-map">
+                {{ map|safe }}
+            </div>
 
-        <!--Plot-->
-        <button id="plot-btn" onclick="togglePlot()">Show Plot</button>
-
-        <div id="plot-div" class="plot">
-            <div id="plot-div-header">Placeholder for name of a plot</div>
-            {% autoescape off %}
-            {{ plot_div|safe }}
-            {% endautoescape %}
-        </div>
-
-        <!--Side Panel-->
-        <div class="side">
-            <button class="side-panel-toggle" type="button">
-                <span class="material-icons sp-icon-open">keyboard_double_arrow_left</span>
-                <span class="material-icons sp-icon-close">keyboard_double_arrow_right</span>
-            </button>
-
-
-            <div class="side-panel">
-                <div>
-                   {% if selected_country %}
-                    <p><strong>Country: {{ selected_country.name }}</strong></p>
-                    {% endif %}
-
-                   {% if selected_var %}
-                    <p>Variable: {{ selected_var }}</p>
-                    {% endif %}
-
-                   {% if selected_date %}
-                    <p>Date and time: {{ selected_date }} </p>
-                    {% endif %}
-
-                   {% if selected_type %}
-                    <p>Type: {{ selected_type }}</p>
-                    {% endif %}
-
-                    {% if points_count %}
-                    <p>Num of points: {{ points_count }}</p>
-                    {% endif %}
-
-                </div>
-                <hr>
-
-                <!--User selection-->
-                <div style="height: 100px;" >
-                    <form method="post">
-                        {% csrf_token %}
-
-                        <div class="user-input">
-                            <label for="visual_type">Visualization method</label>
-                            <select id="visual_type" name="visual_type" required>
-                                <option selected disabled style="display:none;" value="">Select...</option>
-                                <option value="points">Points</option>
-                                <option value="choropleth">Choropleth</option>
-                            </select>
-                        </div>
-                        <hr>
-
-                        <div class="user-input">
-                            <label for="country">Country</label>
-                            <select id="country" name="country" required>
-                                <option selected disabled style="display:none;" value="">Select...</option>
-                                {% if countries %}
-                                    {% for country in countries %}
-                                        <option value="{{ country.id }}">{{ country.name }}</option>
-                                    {% endfor %}
-                                {% endif %}
-                            </select>
-                        </div>
-                        <hr>
-
-                        <div class="user-input">
-                            <label for="date">Date</label>
-                            <select id="date" name="date" required>
-                                <option selected disabled style="display:none;" value="">Select...</option>
-                                {% if times %}
-                                    {% for time in times %}
-                                        <option value="{{ time.time|date:'d-m-Y H:i' }}">{{ time.time|date:"d-m-Y H:i" }}</option>
-                                    {% endfor %}
-                                {% endif %}
-                            </select>
-                        </div>
-                        <hr>
-
-                        <div id="form-meteo" class="user-input meteo">
-                            <p>Variable:</p>
-
-                            <input type="radio" id="temp" name="meteo_var" value="temp" required>
-                            <label for="temp">Temperature</label><br>
-
-                            <input type="radio" id="rel_hum" name="meteo_var" value="rel_hum">
-                            <label for="rel_hum">Relative Humidity</label><br>
-
-                            <input type="radio" id="spec_hum" name="meteo_var" value="spec_hum">
-                            <label for="spec_hum">Specific Humidity</label>
-
-                            <input type="radio" id="tcc" name="meteo_var" value="tcc">
-                            <label for="tcc">Total Cloud Cover</label>
-
-                            <input type="radio" id="u_wind" name="meteo_var" value="u_wind">
-                            <label for="u_wind">U Component of Wind</label>
-
-                            <input type="radio" id="v_wind" name="meteo_var" value="v_wind">
-                            <label for="v_wind">V Component of Wind</label>
-
-                            <input type="radio" id="gust" name="meteo_var" value="gust">
-                            <label for="gust">Wind Speed</label>
-
-                            <input type="radio" id="pwat" name="meteo_var" value="pwat">
-                            <label for="pwat">Precipitable Water</label>
-                        </div>
-                        <hr>
-
-                            <input type="submit" value="Submit">
-                    </form>
-                </div>
+            <div class="plot-div" style="border: 1px solid blue">
+                {% autoescape off %}
+                {{ plot_div|safe }}
+                {% endautoescape %}
             </div>
         </div>
 
+        <!--Side Panel-->
+        <div class="side-panel">
+            <div>
+               {% if selected_country %}
+                <p><strong>Country: {{ selected_country.name }}</strong></p>
+                {% endif %}
 
+               {% if selected_var %}
+                <p>Variable: {{ selected_var }}</p>
+                {% endif %}
+
+               {% if selected_date %}
+                <p>Date and time: {{ selected_date }} </p>
+                {% endif %}
+
+               {% if selected_type %}
+                <p>Type: {{ selected_type }}</p>
+                {% endif %}
+
+                {% if points_count %}
+                <p>Num of points: {{ points_count }}</p>
+                {% endif %}
+
+            </div>
+            <hr>
+
+            <!--User selection-->
+            <div style="height: 100px;" >
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="user-input">
+                        <label for="visual_type">Visualization method</label>
+                        <select id="visual_type" name="visual_type" required>
+                            <option selected disabled style="display:none;" value="">Select...</option>
+                            <option value="points">Points</option>
+                            <option value="choropleth">Choropleth</option>
+                        </select>
+                    </div>
+                    <hr>
+
+                    <div class="user-input">
+                        <label for="country">Country</label>
+                        <select id="country" name="country" required>
+                            <option selected disabled style="display:none;" value="">Select...</option>
+                            {% if countries %}
+                                {% for country in countries %}
+                                    <option value="{{ country.id }}">{{ country.name }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                    <hr>
+
+                    <div class="user-input">
+                        <label for="date">Date</label>
+                        <select id="date" name="date" required>
+                            <option selected disabled style="display:none;" value="">Select...</option>
+                            {% if times %}
+                                {% for time in times %}
+                                    <option value="{{ time.time|date:'d-m-Y H:i' }}">{{ time.time|date:"d-m-Y H:i" }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                    <hr>
+
+                    <div class="user-input">
+                        <label for="variable">Select variable:</label>
+                        <select id="variable" name="meteo_var" required>
+                            <option selected disabled style="display:none;" value=""></option>
+                            {% if variables %}
+                                {% for var in variables %}
+                                    <option value="{{ var }}">{{ var|long_name }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                    <hr>
+                    <input type="submit" value="Submit">
+                </form>
+            </div>
+        </div>
+
+<!--        </div>-->
     </div>
-
-    <script>
-        document.querySelector(".side-panel-toggle").addEventListener('click', () => {
-            document.querySelector(".wrapper").classList.toggle("side-panel-open");
-        });
-    </script>
-
-    <script>
-        function togglePlot() {
-          var x = document.getElementById("plot-div");
-          if (x.style.display === "block") {
-            x.style.display = "none";
-          } else {
-            x.style.display = "block";
-          }
-
-          var y = document.getElementById("plot-btn");
-          if(y.textContent === "Show Plot"){
-            y.textContent = "Hide Plot";
-          }else{
-            y.textContent= "Show Plot";
-          }
-        }
-    </script>
-
-    <script>
-        //Make the Timeseries plot div element draggagle:
-        dragElement(document.getElementById("plot-div"));
-
-        function dragElement(elmnt) {
-          var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-          if (document.getElementById(elmnt.id + "-header")) {
-            /* if present, the header is where you move the DIV from:*/
-            document.getElementById(elmnt.id + "-header").onmousedown = dragMouseDown;
-          } else {
-            /* otherwise, move the DIV from anywhere inside the DIV:*/
-            elmnt.onmousedown = dragMouseDown;
-          }
-
-          function dragMouseDown(e) {
-            e = e || window.event;
-            e.preventDefault();
-            // get the mouse cursor position at startup:
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            document.onmouseup = closeDragElement;
-            // call a function whenever the cursor moves:
-            document.onmousemove = elementDrag;
-          }
-
-          function elementDrag(e) {
-            e = e || window.event;
-            e.preventDefault();
-            // calculate the new cursor position:
-            pos1 = pos3 - e.clientX;
-            pos2 = pos4 - e.clientY;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            // set the element's new position:
-            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-          }
-
-          function closeDragElement() {
-            /* stop moving when mouse button is released:*/
-            document.onmouseup = null;
-            document.onmousemove = null;
-          }
-        }
-    </script>
 
 </body>
 </html>

@@ -18,10 +18,12 @@ def map_page(request):
     context = {
         'countries': WorldBorder.objects.all().order_by('name'),
         'times': Location.objects.values('time').distinct().order_by('time'),
+        'variables': ['temp', 'rel_hum', 'tcc', 'spec_hum', 'u_wind', 'v_wind', 'gust', 'pwat']
     }
 
     if request.method != 'POST':
-        m = folium.Map([0, 0], zoom_start=2)
+        f = folium.Figure(height="100%")
+        m = folium.Map([0, 0], zoom_start=2).add_to(f)
     elif request.method == 'POST':
         # save user selection
         context['selected_type'] = request.POST.get('visual_type')
@@ -85,7 +87,9 @@ def map_page(request):
         context['plot_div'] = fig
 
         # initialize blank folium map
-        m = folium.Map([context['selected_country']['lat'], context['selected_country']['lon']], zoom_start=6)
+        f = folium.Figure(height="100%")
+        m = folium.Map([context['selected_country']['lat'], context['selected_country']['lon']],
+                       zoom_start=6).add_to(f)
 
         folium.raster_layers.TileLayer(
             'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png?api_key=e379e366-57a6-4682-ad6f-2f1a779548b2',
@@ -130,8 +134,8 @@ def create_timeseries(time_list1, var_list1, time_list2, var_list2, selected_cou
         x=time_list1,
         y=var_list1,
         title=f'Average {var_data["long_name"]} [{var_data["unit"]}] in {selected_country["name"]}',
-        width=900,
-        height=250,
+        # width=900,
+        height=195,
         labels={"x": "Date", "y": var_data['long_name'] + ' [' + var_data['unit'] + ']'},
         markers=True
     )
