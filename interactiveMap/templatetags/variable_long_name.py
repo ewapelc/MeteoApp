@@ -2,6 +2,7 @@ from django import template
 
 register = template.Library()
 
+
 @register.filter(name="long_name")
 def long_name(var):
     """Returns the full name of the meteorological variable, given the short name string."""
@@ -23,3 +24,13 @@ def long_name(var):
         return 'Precipitable Water'
     else:
         return 'Wrong value'
+
+
+@register.filter(name="long_type")
+def long_type(var):
+    """Returns full name of visualisation type."""
+    if var == 'points':
+        return 'Polygons'
+    elif var == 'choropleth':
+        return 'Choropleth Map'
+    return 'Wrong value'

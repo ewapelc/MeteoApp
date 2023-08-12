@@ -1,0 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@200;300;400;500;600;700&display=swap');
+*{
+  margin: 0;
+  padding: 0;
+  font-family: "Open Sans" , sans-serif;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+  line-height: 1.1;
+}
+
+.wrapper {
+    background-color: rgb(246, 250, 253);
+}
+
+
+.wrapper {
+    display: flex;
+    height: 100vh;
+}
+
+.row {
+    width: 100%;
+    margin: 0 260px 0 60px;
+    display: grid;
+    grid-template-rows: 1fr 200px;
+}
+
+
+.folium-map {
+    margin: 10px 0;
+}
+
+.plot-div {
+    /*border: 1px solid blue;*/
+    /*box-shadow: 0 0 10px rgba(0, 0, 0, 0.35);*/
+}
+
+
+.side-panel {
+    position: fixed;
+    right: 0;
+    width: 250px;
+    height: 100vh;
+    padding: 20px;
+    background: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.35);
+}
+
+.side-panel p {
+    font-size: 14px;
+    color: #20293D;
+    margin-bottom: 5px;
+}
+
+.flex-container {
+    align-content: space-between;
+}
+
+.summary {
+    margin-bottom: 30px;
+}
+
+
+/*--------------------------*/
+
+select  {
+    width: 100%;
+}
+
+#form-meteo label {
+    float: left;
+}
+
+#form-meteo label + input {
+    clear: both;
+}
+
+/*----------------------------------------*/
+select, label{
+   /* display: block;*/
+    margin: 5px 0;
+}
+
+label {
+    font-size: 14px;
+    color: #333333;
+}
+
+select {
+    margin: 2px 0 15px 0;
+    padding: 6px;
+    font-size: 14px;
+    color: #333333;
+    /*border: 1px solid;*/
+    border-color: #bababa;
+    border-radius: 2px;
+    cursor: pointer;
+
+    background: url("data:image/svg+xml,<svg height='10px' width='10px' viewBox='0 0 16 16' fill='rgb(186,186,186)' xmlns='http://www.w3.org/2000/svg'><path d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/></svg>") no-repeat;
+    background-position: calc(100% - 0.75rem) center !important;
+    -moz-appearance:none !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    padding-right: 2rem !important;
+}
+
+input {
+    margin-top: 10px;
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 1px solid;
+    background-color: gray;
+    color: white;
+}
+
+input:hover {
+    background-color: darkgray;
+    cursor: pointer;
+}
+
+hr {
+    margin-bottom: 30px;
+    border: 1px solid;
+    border-color: rgba(227,232,237,1.00);
+}
+
+h3 {
+    font-size: 29px;
+    color: #20293D;
+    font-weight: 300;
+    margin-bottom: 20px;
+}
+
+table {
+    width: 100%;
+}
+
+td:nth-child(2) {
+    text-align: right;
+}
+
+

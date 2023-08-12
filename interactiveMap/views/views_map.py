@@ -18,7 +18,7 @@ def map_page(request):
     context = {
         'countries': WorldBorder.objects.all().order_by('name'),
         'times': Location.objects.values('time').distinct().order_by('time'),
-        'variables': ['temp', 'rel_hum', 'tcc', 'spec_hum', 'u_wind', 'v_wind', 'gust', 'pwat']
+        'variables': ['temp', 'rel_hum', 'spec_hum', 'tcc', 'u_wind', 'v_wind', 'gust', 'pwat']
     }
 
     if request.method != 'POST':
