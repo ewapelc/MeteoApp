@@ -1,0 +1,106 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@200;300;400;500;600;700&display=swap');
+*{
+  margin: 0;
+  padding: 0;
+  font-family: "Open Sans" , sans-serif;
+  box-sizing: border-box;
+}
+
+.container {
+    width: 200px;
+    height: 100vh;
+    background: #fff;
+    font-size: 14px;
+    border-right: 1px solid;
+    border-right-color: rgba(227,232,237,1.00);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.35) ;
+    position: absolute;
+    transition: 0.3s ease-in-out;
+    z-index: 1;
+}
+
+.container .navbar {
+    width: 100%;
+    padding: 10px;
+    list-style: none;
+    margin-top: 20px;
+}
+
+.container .navbar li {
+    width: 100%;
+    display: inline-flex;
+    margin-top: 15px;
+}
+
+.container .navbar li a {
+    width: 100%;
+    display: inline-flex;
+    text-decoration: none;
+    color: #333333;
+    padding: 5px 8px;
+}
+
+.container .navbar li a:hover {
+    background-color: rgba(0,138,230, 0.1);
+    border-radius: 4px;
+    color: blue;
+}
+
+.container .navbar li a i {
+    margin-right: 10px;
+    font-size: 15px;
+}
+
+.container .navbar li a {
+    transform: scale(1);
+    transform-origin: left;
+}
+
+#check:checked ~ .container .navbar li a {
+    transform: scale(0);
+}
+
+/* toggle button */
+
+.hide {
+    -webkit-appearance: none;
+    display: none;
+    visibility: hidden;
+}
+
+.container label #arrow {
+    position: absolute;
+    width: 27px;
+    height: 27px;
+    line-height: 27px;
+    right: -15px;
+    font-size: 20px;
+    background: #fff;
+    border: 1px solid;
+    border-color: #ccd0d5;
+    z-index: 2;
+    text-align: center;
+    top: 100px;
+    border-radius: 50px;
+    transition: 0.3s;
+}
+
+.container label #arrow:hover {
+    background: rgb(23, 133, 252);
+    border-color: rgb(23, 133, 252);
+    color: white;
+    cursor: pointer;
+}
+
+#check:checked ~ .container label #arrow {
+    transform: rotate(180deg);
+}
+
+#check:checked ~ .container {
+    max-width: 13px;
+}
+
+
+
+
+

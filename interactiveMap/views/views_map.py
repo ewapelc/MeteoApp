@@ -39,6 +39,7 @@ def map_page(request):
 
         context['points_count'] = points.count()
 
+        # -----------------------------------------------------------------------------------------------
         # prepare queryset for timeseries plot
         queryset = Location.objects.filter(
             geometry__intersects=context['selected_country']['mpoly']
@@ -85,6 +86,7 @@ def map_page(request):
 
         fig = fig._repr_html_()
         context['plot_div'] = fig
+        # -----------------------------------------------------------------------------------------------
 
         # initialize blank folium map
         f = folium.Figure(height="100%")
@@ -140,19 +142,21 @@ def create_timeseries(time_list1, var_list1, time_list2, var_list2, selected_cou
         markers=True
     )
 
-    # the horizontal line indicates the average for the full date and time range
-    fig.add_hline(y=average_var, line_width=3, line_dash="dash", line_color="red")
-
+    # # the horizontal line indicates the average for the full date and time range
+    # fig.add_hline(y=average_var, line_width=3, line_dash="dash", line_color="red")
+    #
     # one point for the selected date and time
     fig.add_scatter(
         x=time_list2,
         y=var_list2,
         marker=dict(size=10, color="red"),
         name='Selected date',
+        showlegend=False
     )
 
     fig.update_layout(
-        margin=dict(b=30, l=30, r=30, t=30)
+        margin=dict(b=0, l=30, r=0, t=30),
+        template="plotly_white"
     )
 
     return fig
