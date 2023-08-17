@@ -30,9 +30,15 @@
     margin: 10px 0;
 }
 
-.plot-div {
-    /*border: 1px solid blue;*/
-    /*box-shadow: 0 0 10px rgba(0, 0, 0, 0.35);*/
+.plot-div .info {
+    height: 100%;
+    margin: auto;
+    text-align: center;
+    border: 1px solid;
+    border-color: rgb(229,229,229);
+    padding: 100px 10px 10px 0;
+    font-size: 12.6px;
+    color: gray;
 }
 
 
@@ -133,6 +139,16 @@ table {
 
 td:nth-child(2) {
     text-align: right;
+}
+
+.user-guide {
+    margin-bottom: 25px;
+    text-align: justify;
+    color: #333333;
+}
+
+#welcome {
+    margin-bottom: 10px;
 }
 
 

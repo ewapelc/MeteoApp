@@ -138,7 +138,7 @@ def create_timeseries(time_list1, var_list1, time_list2, var_list2, selected_cou
         title=f'Average {var_data["long_name"]} [{var_data["unit"]}] in {selected_country["name"]}',
         # width=900,
         height=195,
-        labels={"x": "Date", "y": var_data['long_name'] + ' [' + var_data['unit'] + ']'},
+        labels={"x": "Time of Day (UTC)", "y": 'Average Value' + ' [' + var_data["unit"] + ']'},
         markers=True
     )
 

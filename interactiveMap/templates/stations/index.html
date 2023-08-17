@@ -12,7 +12,7 @@
 
         <!--Custom CSS-->
         {% load static %}
-        <link rel="stylesheet" href="{% static 'map_page3.css' %}">
+        <link rel="stylesheet" href="{% static 'map_page4.css' %}">
 
         <!--Custom template tags-->
         {% load variable_long_name %}
@@ -29,9 +29,14 @@
             </div>
 
             <div class="plot-div">
-                {% autoescape off %}
+                {% if plot_div %}
                 {{ plot_div|safe }}
-                {% endautoescape %}
+                {% else %}
+                <div class="info">
+                    <p><strong>Please note:</strong> Select your preferences on the right to display the results here.</p>
+                </div>
+                {% endif %}
+
             </div>
         </div>
 
@@ -40,12 +45,17 @@
             <div class="summary">
                {% if selected_country %}
                 <h3>{{ selected_country.name }}</h3>
+                {% else %}
+                <div class="user-guide">
+                    <div id="welcome"><p>Welcome to the Interactive Map Module!</p></div>
+                    <p>To get started, choose your preferred visualization type, a country, a time of day, and a variable.<br>Click 'Submit' to see the dynamic map with the selected layer, offering insights into your chosen meteorological data.</p>
+                </div>
                 {% endif %}
 
                 {% if selected_type %}
                 <table>
                     <tr>
-                        <td><p>Visualisation type:</p></td>
+                        <td><p>Visualization type:</p></td>
                         <td><p>{{ selected_type|long_type }}</p></td>
                     </tr>
                 </table>
@@ -108,7 +118,7 @@
                     </div>
 
                     <div class="user-input">
-                        <label for="date">Select date:</label>
+                        <label for="date">Select time of day:</label>
                         <select id="date" name="date" required>
                             <option selected disabled style="display:none;" value=""></option>
                             {% if times %}
