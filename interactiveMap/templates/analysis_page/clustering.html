@@ -8,18 +8,19 @@ const v = document.getElementById('clustering');
 v.style.fontWeight = 550;
 </script>
 
-<h1>Cluster Analysis</h1>
-<p>Some description of the tab.</p>
+<h1>Clustering</h1>
+<p>
+The Clustering tab empowers users to reveal data clusters, offering insights into spatial patterns. It utilizes the SKATER method for comprehensive spatial clustering, considering variables and spatial distributions for a holistic understanding of weather trends.</p>
 <hr>
 
 
 <div class="timeseries-plot">
-    <h3>h3 subtitle</h3>
+    <h3>Cluster Analysis: Variable Patterns in Selected Country</h3>
     <span>
-        description
+        Explore and differentiate regions with similar meteorological variable values within a chosen country, date, and variables.
     </span>
     <div class="info">
-        <p><strong>Please note:</strong> Something</p>
+        <p><strong>Please note:</strong> If you'd like the clustering model to incorporate a combination of variables, please select multiple options from the dropdown list.</p>
     </div>
 
    <div class="form">
@@ -28,7 +29,7 @@ v.style.fontWeight = 550;
             <div class="user-input">
                 <label for="country">Select country:</label>
                 <select id="country" name="country" required>
-                    <option selected disabled style="display:none;" value="">Select...</option>
+                    <option selected disabled style="display:none;" value=""></option>
                     {% if countries %}
                         {% for country in countries %}
                             <option value="{{ country.id }}">{{ country.name }}</option>
@@ -38,9 +39,9 @@ v.style.fontWeight = 550;
             </div>
 
             <div class="user-input">
-                <label for="variable">Select variable:</label>
-                <select id="variable" name="variable" required>
-                    <option selected disabled style="display:none;" value="">Select...</option>
+                <label for="variable">Select variables:</label>
+                <select id="variable" name="variable[]" multiple required>
+<!--                    <option selected disabled style="display:none;" value=""></option>-->
                     {% if variables %}
                         {% for var in variables %}
                             <option value="{{ var }}">{{ var|long_name }}</option>
@@ -52,7 +53,7 @@ v.style.fontWeight = 550;
             <div class="user-input">
                 <label for="date">Select date:</label>
                 <select id="date" name="date" required>
-                    <option selected disabled style="display:none;" value="">Select...</option>
+                    <option selected disabled style="display:none;" value=""></option>
                     {% if times %}
                         {% for time in times %}
                             <option value="{{ time.time|date:'d-m-Y H:i' }}">{{ time.time|date:"d-m-Y H:i" }}</option>
@@ -61,13 +62,48 @@ v.style.fontWeight = 550;
                 </select>
             </div>
 
-            <input type="submit" name="plot-1" value="Submit">
+            <div class="user-input">
+                <label for="n_clusters">Number of clusters:</label>
+                <input type="number" id="n_clusters" name="n_clusters" class="input-number" value="5" min="1" step="1"/>
+            </div>
+
+            <div class="user-input">
+                <label for="floor">Minimum number of points in each cluster:</label>
+                <input type="number" id="floor" name="floor" class="input-number" value="5" min="1" step="1"/>
+            </div>
+
+            <div class="user-input">
+                <label for="islands">Include islands:</label>
+                <select id="islands" name="islands">
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                </select>
+            </div>
+
+            <input class="submit-button" type="submit" name="plot-1" value="Submit">
         </form>
+
+        <!--js library for multiselect-->
+        <script src="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag/dist/js/multi-select-tag.js"></script>
+       <script>
+            new MultiSelectTag('variable')  // id
+        </script>
     </div>
 
+    {% if clustering_plot %}
     <div class="plot">
         <img src="data:image/png;base64, {{clustering_plot|safe}}" alt="" id="img">
     </div>
+    {% elif error %}
+    <div class="info">
+        <p><strong>An exception occured:</strong> <i>{{ error }}</i></p>
+            {% if info %}
+            <br>
+            <p>Please adjust the parameters: {{ info }}</p>
+            {% endif %}
+    </div>
+    {% endif %}
+
 </div>
 
 </div>

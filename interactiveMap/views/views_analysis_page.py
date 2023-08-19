@@ -448,7 +448,14 @@ def clustering(request):
     if request.method == 'POST':
         context['selected_country'] = WorldBorder.objects.filter(id=request.POST.get('country')).values().last()
         context['selected_date'] = request.POST.get('date')
-        context['selected_var'] = request.POST.get('variable')
+        context['selected_variables'] = request.POST.getlist('variable[]')
+
+        context['n_clusters'] = int(request.POST.get('n_clusters'))
+        context['floor'] = int(request.POST.get('floor'))
+        if request.POST.get('islands') == 'yes':
+            context['islands'] = "increase"
+        elif request.POST.get('islands') == 'no':
+            context['islands'] = "ignore"
 
         # create country border GeoDataFrame
         country = list(
@@ -474,12 +481,12 @@ def clustering(request):
         data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
 
         # set parameters for model
-        attrs_name = [context['selected_var']]
+        # attrs_name = context['selected_variables']
         w = libpysal.weights.Queen.from_dataframe(data_gdf)
-        n_clusters = 5
-        floor = 5
         trace = False
-        islands = "increase"
+        # n_clusters = 5
+        # floor = 5
+        # islands = "increase"
 
         spanning_forest_kwds = dict(
             dissimilarity=skm.manhattan_distances,
@@ -493,32 +500,45 @@ def clustering(request):
         model = spopt.region.Skater(
             data_gdf,
             w,
-            attrs_name,
-            n_clusters=n_clusters,
-            floor=floor,
+            context['selected_variables'],
+            n_clusters=context['n_clusters'],
+            floor=context['floor'],
             trace=trace,
-            islands=islands,
+            islands=context['islands'],
             spanning_forest_kwds=spanning_forest_kwds
         )
-        model.solve()
 
-        # store labels (clusters) from the model
-        data_gdf["model_regions"] = model.labels_
+        try:
+            model.solve()
 
-        # plot the border and data clusters
-        fig = cluster_plot(country_gdf, data_gdf, datetime_obj, context['selected_var'], context['selected_country'])
+            # store labels (clusters) from the model
+            data_gdf["model_regions"] = model.labels_
 
-        # calculate statistics
-        data_gdf["count"] = 1
-        data_gdf[["model_regions", "count"]].groupby(by="model_regions").count()
+            # plot the border and data clusters
+            fig = cluster_plot(
+                country_gdf,
+                data_gdf,
+                datetime_obj,
+                context['selected_variables'],
+                context['selected_country']
+            )
 
-        # return to context
-        context['clustering_plot'] = fig
+            # calculate statistics
+            data_gdf["count"] = 1
+            data_gdf[["model_regions", "count"]].groupby(by="model_regions").count()
+
+            # return to context
+            context['clustering_plot'] = fig
+
+        except Exception as error:
+            context['error'] = error
+            if "Islands must be larger than the quorum" in str(error):
+                context['info'] = "One possible solution is to reduce the minimum number of points in each cluster."
 
     return render(request, 'analysis_page/clustering.html', context)
 
 
-def cluster_plot(country_gdf, data_gdf, datetime_obj, chosen_var, chosen_country):
+def cluster_plot(country_gdf, data_gdf, datetime_obj, chosen_vars, chosen_country):
     """ Returns cluster plot. """
 
     # needed for plot
@@ -541,12 +561,22 @@ def cluster_plot(country_gdf, data_gdf, datetime_obj, chosen_var, chosen_country
     )
 
     # add details
-    var_data = long_name_and_unit(chosen_var)
+    full_names_with_units = []
+    for var in chosen_vars:
+        var_data = long_name_and_unit(var)
+        s = "".join([var_data['long_name'], ' [', var_data['unit'], ']'])
+        full_names_with_units.append(s)
+
+    vars_str = ", ".join(full_names_with_units)
     date_str = datetime.strftime(datetime_obj, "%d-%m-%Y %H:%M")
-    ax.set_title(
-        f'Clusters of {var_data["long_name"]} [{var_data["unit"]}] in {chosen_country["name"]} at {date_str}',
-        fontdict={'fontsize': '15', 'fontweight': '2'},
-        pad=15
+    plt.suptitle(
+        f'Multi-Variable Clusters in {chosen_country["name"]} at {date_str}',
+        fontsize=15
+    )
+    plt.title(
+        f'Clustering Model Based on {vars_str}',
+        pad=15,
+        fontdict={'fontsize': 11}
     )
     ax.set_xlabel(u"Longitude [\N{DEGREE SIGN}]")
     ax.set_ylabel(u"Latitude [\N{DEGREE SIGN}]")

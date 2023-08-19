@@ -153,7 +153,7 @@ select {
 }
 
 
-input {
+.submit-button {
     margin-top: 30px;
     padding: 10px 20px;
     border-radius: 20px;
@@ -162,7 +162,7 @@ input {
     color: white;
 }
 
-input:hover {
+.submit-button:hover {
     background-color: darkgray;
     cursor: pointer;
 }
@@ -197,4 +197,16 @@ input:hover {
 .mult-select-tag ul li {
     font-size: 14px !important;
     color: #333333 !important;
+}
+
+.input-number {
+    width: 290px;
+    margin-top: 5px;
+    padding: 9px;
+    font-size: 14px;
+    color: #333333;
+    border: 1px solid;
+    border-color: #bababa;
+    border-radius: 2px;
+    cursor: pointer;
 }
