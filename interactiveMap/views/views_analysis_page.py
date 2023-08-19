@@ -8,6 +8,10 @@ from shapely.geometry import Polygon
 import os
 from PIL import Image
 import plotly.express as px
+import libpysal
+from sklearn.metrics import pairwise as skm
+import numpy as np
+import spopt
 
 from interactiveMap.models import Location, WorldBorder, CountryRegion
 from django.db.models import Subquery, Avg, F, OuterRef, Min, Max
@@ -435,7 +439,124 @@ def animation(request):
 def clustering(request):
     """ Renders the Clustering tab. """
 
-    return render(request, 'analysis_page/clustering.html')
+    context = {
+        'countries': WorldBorder.objects.all().order_by('name'),
+        'times': Location.objects.values('time').distinct().order_by('time'),
+        'variables': ['temp', 'rel_hum', 'spec_hum', 'tcc', 'u_wind', 'v_wind', 'gust', 'pwat']
+    }
+
+    if request.method == 'POST':
+        context['selected_country'] = WorldBorder.objects.filter(id=request.POST.get('country')).values().last()
+        context['selected_date'] = request.POST.get('date')
+        context['selected_var'] = request.POST.get('variable')
+
+        # create country border GeoDataFrame
+        country = list(
+            WorldBorder.objects.filter(
+                id=request.POST.get('country')
+            ).values('iso2', geometry=F('mpoly'))
+        )
+        country_gdf = gpd.GeoDataFrame(country, crs='EPSG:4326')
+        wkt1 = country_gdf.geometry.apply(lambda x: x.wkt)
+        country_gdf = gpd.GeoDataFrame(country_gdf, geometry=gpd.GeoSeries.from_wkt(wkt1), crs='EPSG:4326')
+
+        # filter data by country and date
+        datetime_obj = datetime.strptime((context['selected_date']), "%d-%m-%Y %H:%M")
+        points = Location.objects.filter(
+            time=datetime_obj,
+            geometry__intersects=context['selected_country']['mpoly']
+        ).values()
+
+        # change queryset into GeoDataFrame
+        data_df = pd.DataFrame(points)
+        data_df.dropna(axis=0, inplace=True)
+        wkt2 = data_df.geometry.apply(lambda x: x.wkt)
+        data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
+
+        # set parameters for model
+        attrs_name = [context['selected_var']]
+        w = libpysal.weights.Queen.from_dataframe(data_gdf)
+        n_clusters = 5
+        floor = 5
+        trace = False
+        islands = "increase"
+
+        spanning_forest_kwds = dict(
+            dissimilarity=skm.manhattan_distances,
+            affinity=None,
+            reduction=np.sum,
+            center=np.mean,
+            verbose=2
+        )
+
+        # create SKATER model
+        model = spopt.region.Skater(
+            data_gdf,
+            w,
+            attrs_name,
+            n_clusters=n_clusters,
+            floor=floor,
+            trace=trace,
+            islands=islands,
+            spanning_forest_kwds=spanning_forest_kwds
+        )
+        model.solve()
+
+        # store labels (clusters) from the model
+        data_gdf["model_regions"] = model.labels_
+
+        # plot the border and data clusters
+        fig = cluster_plot(country_gdf, data_gdf, datetime_obj, context['selected_var'], context['selected_country'])
+
+        # calculate statistics
+        data_gdf["count"] = 1
+        data_gdf[["model_regions", "count"]].groupby(by="model_regions").count()
+
+        # return to context
+        context['clustering_plot'] = fig
+
+    return render(request, 'analysis_page/clustering.html', context)
+
+
+def cluster_plot(country_gdf, data_gdf, datetime_obj, chosen_var, chosen_country):
+    """ Returns cluster plot. """
+
+    # needed for plot
+    plt.switch_backend('AGG')
+    fig, ax = plt.subplots(figsize=(10, 7))
+
+    country_gdf.plot(
+        ax=ax,
+        edgecolor="black",
+        linewidth=0.5,
+        color='white'
+    )
+
+    data_gdf.plot(
+        ax=ax,
+        column="model_regions",
+        categorical=True,
+        edgecolor="w",
+        legend=True
+    )
+
+    # add details
+    var_data = long_name_and_unit(chosen_var)
+    date_str = datetime.strftime(datetime_obj, "%d-%m-%Y %H:%M")
+    ax.set_title(
+        f'Clusters of {var_data["long_name"]} [{var_data["unit"]}] in {chosen_country["name"]} at {date_str}',
+        fontdict={'fontsize': '15', 'fontweight': '2'},
+        pad=15
+    )
+    ax.set_xlabel(u"Longitude [\N{DEGREE SIGN}]")
+    ax.set_ylabel(u"Latitude [\N{DEGREE SIGN}]")
+
+    plt.tight_layout()
+
+    # convert the plot into memory buffer - needed for static plots
+    fig = get_graph()
+
+    return fig
 
 
 def long_name_and_unit(var):

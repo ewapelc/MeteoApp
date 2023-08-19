@@ -1,5 +1,8 @@
 {% include 'analysis_page/layout.html' %}
 
+<!--Custom template tags-->
+{% load variable_long_name %}
+
 <script>
 const v = document.getElementById('clustering');
 v.style.fontWeight = 550;
@@ -11,49 +14,61 @@ v.style.fontWeight = 550;
 
 
 <div class="timeseries-plot">
-    <h3>globalna - podzial na strefy klimatyczne <br>lokalna - podział na mikroklimaty w danym kraju</h3>
-    <span>Sprawdza się temperaturę i opady atmosferyczne</span>
-    <br>
+    <h3>h3 subtitle</h3>
     <span>
-        6. Podział na strefy klimatyczne - GLOBALNE
-        i pokazanie że wykresy timeseries różnią się dla tych
-        różnych stref klimatycznych
-        z innymi kolorami i pokazaniem srednich
-            WYBÓR ZMIENNEJ
+        description
     </span>
+    <div class="info">
+        <p><strong>Please note:</strong> Something</p>
+    </div>
+
+   <div class="form">
+        <form method="post">
+        {% csrf_token %}
+            <div class="user-input">
+                <label for="country">Select country:</label>
+                <select id="country" name="country" required>
+                    <option selected disabled style="display:none;" value="">Select...</option>
+                    {% if countries %}
+                        {% for country in countries %}
+                            <option value="{{ country.id }}">{{ country.name }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="user-input">
+                <label for="variable">Select variable:</label>
+                <select id="variable" name="variable" required>
+                    <option selected disabled style="display:none;" value="">Select...</option>
+                    {% if variables %}
+                        {% for var in variables %}
+                            <option value="{{ var }}">{{ var|long_name }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="user-input">
+                <label for="date">Select date:</label>
+                <select id="date" name="date" required>
+                    <option selected disabled style="display:none;" value="">Select...</option>
+                    {% if times %}
+                        {% for time in times %}
+                            <option value="{{ time.time|date:'d-m-Y H:i' }}">{{ time.time|date:"d-m-Y H:i" }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <input type="submit" name="plot-1" value="Submit">
+        </form>
+    </div>
+
+    <div class="plot">
+        <img src="data:image/png;base64, {{clustering_plot|safe}}" alt="" id="img">
+    </div>
 </div>
-
-<div class="timeseries-plot">
-    <h3>Some text.</h3>
-    <span>
-        7. Dla danej strefy klimatycznej
-        np gdzieś gdzie jest pustynia
-        pokazać że np regiony pustynne w Afryce mają największy wpływ
-        na średnią temperaturę całej strefy
-        że ciągną ją mocno do góry
-
-        To samo dla arktyki
-    </span>
-</div>
-
-<div class="timeseries-plot">
-    <h3>Some text.</h3>
-    <span>
-        8. Jakaś klasteryzacja zmiennych i pokazanie, że
-        to jak wartości zmiennych się grupują odpowiada np.
-        podziałowi na strefy klimatyczne
-        albo inne mniejsze regiony na terenie kraju
-        Dwie mapki koło siebie z kolorowanymi strefami, regionami
-        a pod spodem timeseries
-        żeby unaocznić różniące się mikroklimaty
-
-
-        Może wybrać kraj, gdzie są regiony o różnym klimacie, żeby
-        było to wyraźnie widać
-        np. Polska albo stany
-    </span>
-</div>
-
 
 </div>
 </div>
