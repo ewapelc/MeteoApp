@@ -12,6 +12,11 @@ import libpysal
 from sklearn.metrics import pairwise as skm
 import numpy as np
 import spopt
+from affine import Affine
+
+from pykrige.ok import OrdinaryKriging
+from shapely.geometry import Point
+from sklearn.model_selection import train_test_split
 
 from interactiveMap.models import Location, WorldBorder, CountryRegion
 from django.db.models import Subquery, Avg, F, OuterRef, Min, Max
@@ -222,7 +227,6 @@ def extract_var(country, meteo_variable):
     return {'time': time, 'meteo_var': meteo_var}
 
 
-# to be changed
 def interpolation(request):
     """ Renders the Interpolation tab. """
 
@@ -232,37 +236,135 @@ def interpolation(request):
         'times': Location.objects.values('time').distinct().order_by('time')
     }
 
-    # if request.method == 'POST':
-    #     if 'plot-1' in request.POST:
-    #         context['chosen_country'] = WorldBorder.objects.filter(id=request.POST.get('country')).values().last()
-    #         context['chosen_var'] = request.POST.get('variable')
-    #         context['chosen_date'] = datetime.strptime((request.POST.get('date')), "%d-%m-%Y %H:%M")
-    #
-    #         # filter points
-    #         points = list(Location.objects.filter(
-    #             time=context['chosen_date'],
-    #             geometry__intersects=context['chosen_country']['mpoly']
-    #         ).values(context['chosen_var'], 'geometry'))
-    #
-    #         country = list(WorldBorder.objects.filter(
-    #             id=request.POST.get('country')
-    #         ).values('iso2', geometry=F('mpoly')))
-    #
-    #         # transform data
-    #         country_gdf = gpd.GeoDataFrame(country, crs='EPSG:4326')
-    #         wkt1 = country_gdf.geometry.apply(lambda x: x.wkt)
-    #         country_gdf = gpd.GeoDataFrame(country_gdf, geometry=gpd.GeoSeries.from_wkt(wkt1), crs='EPSG:4326')
-    #
-    #         data_df = pd.DataFrame(points)
-    #         data_df.dropna(axis=0, inplace=True)
-    #         wkt2 = data_df.geometry.apply(lambda x: x.wkt)
-    #         data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
-    #
-    #         [fig, plot] = get_plot(country_gdf, data_gdf, context['chosen_var'], context['chosen_date'])
-    #
-    #         context['matplotlib_plot'] = plot
+    if request.method == 'POST':
+        if 'plot-1' in request.POST:
+            context['chosen_country'] = WorldBorder.objects.filter(id=request.POST.get('country')).values().last()
+            context['chosen_var'] = request.POST.get('variable')
+            context['chosen_date'] = datetime.strptime((request.POST.get('date')), "%d-%m-%Y %H:%M")
+
+            # projection string typical for California - change this later
+            proj = "+proj=aea +lat_1=50 +lat_2=0 +lat_0=0 +lon_0=0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=m +no_defs "
+
+            # filter and transform borders data
+            country = list(
+                WorldBorder.objects.filter(
+                    id=request.POST.get('country')
+                ).values('iso2', geometry=F('mpoly'))
+            )
+
+            # here change crs to 'EPSG:43'
+            country_gdf = gpd.GeoDataFrame(country, crs=proj)
+            wkt1 = country_gdf.geometry.apply(lambda x: x.wkt)
+            country_gdf = gpd.GeoDataFrame(country_gdf, geometry=gpd.GeoSeries.from_wkt(wkt1), crs=proj)
+
+            # filter and transform data
+            points = list(
+                Location.objects.filter(
+                    time=context['chosen_date'],
+                    geometry__intersects=context['chosen_country']['mpoly']
+                ).values(context['chosen_var'], 'geometry')
+            )
+            data_df = pd.DataFrame(points)
+            data_df.dropna(axis=0, inplace=True)
+            wkt2 = data_df.geometry.apply(lambda x: x.wkt)
+            data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs=proj)
+
+            # get X and Y coordinates of rainfall points
+            x_rain = data_gdf["geometry"].x
+            y_rain = data_gdf["geometry"].y
+
+            # create list of XY coordinate pairs
+            coords_rain = [list(xy) for xy in zip(x_rain, y_rain)]
+
+            # get extent of counties feature
+            min_x_counties, min_y_counties, max_x_counties, max_y_counties = country_gdf.total_bounds
+
+            # get list of rainfall "values"
+            value_rain = list(data_gdf[context['chosen_var']])
+
+            #-------------------------------------------------------------------------------
+            # Split data into testing and training sets
+            coords_rain_train, coords_rain_test, value_rain_train, value_rain_test = train_test_split(coords_rain,
+                                                                                                      value_rain,
+                                                                                                      test_size=0.20,
+                                                                                                      random_state=42)
+
+            # Create separate GeoDataFrames for testing and training sets
+            rain_train_gdf = gpd.GeoDataFrame(geometry=[Point(x, y) for x, y in coords_rain_train], crs=proj)
+            rain_train_gdf["Actual_Value"] = value_rain_train
+            rain_test_gdf = gpd.GeoDataFrame(geometry=[Point(x, y) for x, y in coords_rain_test], crs=proj)
+            rain_test_gdf["Actual_Value"] = value_rain_test
+
+            # Get minimum and maximum coordinate values of rainfall training points
+            min_x_rain, min_y_rain, max_x_rain, max_y_rain = rain_train_gdf.total_bounds
+            #-------------------------------------------------------------------------------
+
+            # Adapted from: https://geostat-framework.readthedocs.io/projects/pykrige/en/latest/examples/04_krige_geometric.html
+
+            # Create a 100 by 100 grid
+            # Horizontal and vertical cell counts should be the same
+            XX_pk_krig = np.linspace(min_x_rain, max_x_rain, 100)
+            YY_pk_krig = np.linspace(min_y_rain, max_y_rain, 100)
+
+            # Generate ordinary kriging object
+            OK = OrdinaryKriging(
+                np.array(x_rain),
+                np.array(y_rain),
+                value_rain,
+                variogram_model="linear",
+                verbose=False,
+                enable_plotting=False,
+                coordinates_type="euclidean",
+            )
+
+            # Evaluate the method on grid
+            Z_pk_krig, sigma_squared_p_krig = OK.execute("grid", XX_pk_krig, YY_pk_krig)
+
+            # Get resolution
+            xres = (max_x_rain - min_x_rain) / len(XX_pk_krig)
+            yres = (max_y_rain - min_y_rain) / len(YY_pk_krig)
+
+            # Set transform
+            transform = Affine.translation(min_x_rain - xres / 2, min_y_rain - yres / 2) * Affine.scale(xres, yres)
+
+            plot_input = np.ma.getdata(Z_pk_krig)
+
+            fig, ax = plt.subplots(1, figsize=(7, 7))
+
+            # this line changes every plot
+            plt.style.use('bmh')
+
+            plt.imshow(plot_input, extent=[min_x_counties, max_x_counties, max_y_counties, min_y_counties])
+
+            plt.gca().invert_yaxis()
+
+            # # ax.plot(x_rain, y_rain, 'k.', markersize = 2, alpha = 0.5)
+            country_gdf.plot(ax=ax, color='none', edgecolor='black')
+
+            #ax.set_aspect('auto')
+
+            plt.tight_layout()
+
+            # convert the plot into memory buffer - needed for static plots
+            fig = get_graph()
+
+            # fig = interpolation_plot(
+            #     country_gdf,
+            #     data_gdf,
+            #     datetime_obj,
+            #     chosen_vars,
+            #     chosen_country
+            # )
+            #
+            context['interpolation_plot'] = fig
 
     return render(request, 'analysis_page/interpolation.html', context)
+
+
+def interpolation_plot(country_gdf, data_gdf, datetime_obj, chosen_vars, chosen_country):
+    """ Returns interpolation plot. """
+
+    return 1
 
 
 def get_graph():

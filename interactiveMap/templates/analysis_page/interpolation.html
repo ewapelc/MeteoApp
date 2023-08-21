@@ -60,27 +60,9 @@ v.style.fontWeight = 550;
         </form>
     </div>
 
-<!--    <p><strong>Selected country:</strong></p>-->
-<!--    {% if chosen_country %}-->
-<!--        <p>{{ chosen_country.name }}</p>-->
-<!--    {% endif %}-->
-
-<!--    <p><strong>Selected variable:</strong></p>-->
-<!--    {% if chosen_var %}-->
-<!--        <p>{{ chosen_var }}</p>-->
-<!--    {% endif %}-->
-
-<!--    <p><strong>Selected date:</strong></p>-->
-<!--    {% if chosen_date %}-->
-<!--        <p>{{ chosen_date }}</p>-->
-<!--    {% endif %}-->
-
     <div class="plot">
-<!--        {% autoescape off %}-->
-<!--        {{ gpd_plot|safe }}-->
-<!--        {% endautoescape %}-->
-        {% if matplotlib_plot %}
-            <img src="data:image/png;base64, {{matplotlib_plot|safe}}">
+        {% if interpolation_plot %}
+            <img src="data:image/png;base64, {{interpolation_plot|safe}}">
         {% endif %}
     </div>
 </div>
