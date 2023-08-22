@@ -1,20 +1,21 @@
 {% include 'analysis_page/layout.html' %}
 
+<!--Custom template tags-->
+{% load variable_long_name %}
+
 <script>
 const v = document.getElementById('interpolation');
 v.style.fontWeight = 550;
 </script>
 
 <h1>Spatial Interpolation</h1>
-<p>The Interpolation tab allows users to explore the smooth spatial evolution of meteorological variables within a chosen country, date, and variable through Kriging Interpolation, revealing refined changes over space.</p>
+<p>The Interpolation tab allows users to explore the smooth spatial evolution of meteorological variables, revealing refined changes over space.</p>
 <hr>
 
 <div class='interpolation-plot'>
     <h3>Kriging Interpolation: Smoother Variable Transition</h3>
     <span>
         Witness the gradual transformation of a meteorological variable within a chosen country, date, and variable through Kriging Interpolation.
-        <br><br>
-        This visualization offers a refined, smoother portrayal of the variable's evolution across space.
     </span>
 
     <div class="form">
@@ -38,7 +39,7 @@ v.style.fontWeight = 550;
                     <option selected disabled style="display:none;" value="">Select...</option>
                     {% if variables %}
                         {% for var in variables %}
-                            <option value="{{ var }}">{{ var }}</option>
+                            <option value="{{ var }}">{{ var|long_name }}</option>
                         {% endfor %}
                     {% endif %}
                 </select>

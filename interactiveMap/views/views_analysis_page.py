@@ -12,7 +12,6 @@ import libpysal
 from sklearn.metrics import pairwise as skm
 import numpy as np
 import spopt
-from affine import Affine
 
 from pykrige.ok import OrdinaryKriging
 from shapely.geometry import Point
@@ -21,6 +20,8 @@ from sklearn.model_selection import train_test_split
 from interactiveMap.models import Location, WorldBorder, CountryRegion
 from django.db.models import Subquery, Avg, F, OuterRef, Min, Max
 from django.shortcuts import render
+
+plt.style.use('bmh')
 
 
 def home(request):
@@ -40,7 +41,7 @@ def timeseries(request):
 
     context = {
         'countries': WorldBorder.objects.all().order_by('name'),
-        'variables': ['temp', 'rel_hum', 'tcc', 'spec_hum', 'u_wind', 'v_wind', 'gust', 'pwat']
+        'variables': ['temp', 'rel_hum', 'spec_hum', 'tcc', 'u_wind', 'v_wind', 'gust', 'pwat']
     }
 
     if request.method == 'POST':
@@ -232,7 +233,7 @@ def interpolation(request):
 
     context = {
         'countries': WorldBorder.objects.all().order_by('name'),
-        'variables': ['temp', 'rel_hum', 'tcc', 'spec_hum', 'u_wind', 'v_wind', 'gust', 'pwat'],
+        'variables': ['temp', 'rel_hum', 'spec_hum', 'tcc', 'u_wind', 'v_wind', 'gust', 'pwat'],
         'times': Location.objects.values('time').distinct().order_by('time')
     }
 
@@ -252,12 +253,11 @@ def interpolation(request):
                 ).values('iso2', geometry=F('mpoly'))
             )
 
-            # here change crs to 'EPSG:43'
             country_gdf = gpd.GeoDataFrame(country, crs=proj)
             wkt1 = country_gdf.geometry.apply(lambda x: x.wkt)
             country_gdf = gpd.GeoDataFrame(country_gdf, geometry=gpd.GeoSeries.from_wkt(wkt1), crs=proj)
 
-            # filter and transform data
+            # filter and transform meteorological data
             points = list(
                 Location.objects.filter(
                     time=context['chosen_date'],
@@ -269,102 +269,110 @@ def interpolation(request):
             wkt2 = data_df.geometry.apply(lambda x: x.wkt)
             data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs=proj)
 
-            # get X and Y coordinates of rainfall points
-            x_rain = data_gdf["geometry"].x
-            y_rain = data_gdf["geometry"].y
+            # get coordinates of points
+            x_coord = data_gdf["geometry"].x
+            y_coord = data_gdf["geometry"].y
 
             # create list of XY coordinate pairs
-            coords_rain = [list(xy) for xy in zip(x_rain, y_rain)]
+            coords_pairs = [list(xy) for xy in zip(x_coord, y_coord)]
 
-            # get extent of counties feature
-            min_x_counties, min_y_counties, max_x_counties, max_y_counties = country_gdf.total_bounds
+            # get list of chosen variable values
+            values_list = list(data_gdf[context['chosen_var']])
 
-            # get list of rainfall "values"
-            value_rain = list(data_gdf[context['chosen_var']])
+            # split data into testing and training sets
+            coords_train, coords_test, value_train, value_test = train_test_split(coords_pairs,
+                                                                                  values_list,
+                                                                                  test_size=0.20,
+                                                                                  random_state=42)
 
-            #-------------------------------------------------------------------------------
-            # Split data into testing and training sets
-            coords_rain_train, coords_rain_test, value_rain_train, value_rain_test = train_test_split(coords_rain,
-                                                                                                      value_rain,
-                                                                                                      test_size=0.20,
-                                                                                                      random_state=42)
+            # create separate GeoDataFrames for testing and training sets
+            train_gdf = gpd.GeoDataFrame(geometry=[Point(x, y) for x, y in coords_train], crs=proj)
+            train_gdf["Actual_Value"] = value_train
+            test_gdf = gpd.GeoDataFrame(geometry=[Point(x, y) for x, y in coords_test], crs=proj)
+            test_gdf["Actual_Value"] = value_test
 
-            # Create separate GeoDataFrames for testing and training sets
-            rain_train_gdf = gpd.GeoDataFrame(geometry=[Point(x, y) for x, y in coords_rain_train], crs=proj)
-            rain_train_gdf["Actual_Value"] = value_rain_train
-            rain_test_gdf = gpd.GeoDataFrame(geometry=[Point(x, y) for x, y in coords_rain_test], crs=proj)
-            rain_test_gdf["Actual_Value"] = value_rain_test
+            # get minimum and maximum coordinate values of training points
+            min_x_train, min_y_train, max_x_train, max_y_train = train_gdf.total_bounds
 
-            # Get minimum and maximum coordinate values of rainfall training points
-            min_x_rain, min_y_rain, max_x_rain, max_y_rain = rain_train_gdf.total_bounds
-            #-------------------------------------------------------------------------------
+            # create a 100x100 grid (horizontal and vertical cell counts should be the same)
+            xx_krig = np.linspace(min_x_train, max_x_train, 100)
+            yy_krig = np.linspace(min_y_train, max_y_train, 100)
 
-            # Adapted from: https://geostat-framework.readthedocs.io/projects/pykrige/en/latest/examples/04_krige_geometric.html
-
-            # Create a 100 by 100 grid
-            # Horizontal and vertical cell counts should be the same
-            XX_pk_krig = np.linspace(min_x_rain, max_x_rain, 100)
-            YY_pk_krig = np.linspace(min_y_rain, max_y_rain, 100)
-
-            # Generate ordinary kriging object
-            OK = OrdinaryKriging(
-                np.array(x_rain),
-                np.array(y_rain),
-                value_rain,
+            # generate ordinary kriging object
+            ok_object = OrdinaryKriging(
+                np.array(x_coord),
+                np.array(y_coord),
+                values_list,
                 variogram_model="linear",
                 verbose=False,
                 enable_plotting=False,
                 coordinates_type="euclidean",
             )
 
-            # Evaluate the method on grid
-            Z_pk_krig, sigma_squared_p_krig = OK.execute("grid", XX_pk_krig, YY_pk_krig)
+            # evaluate the method on grid
+            z_krig, sigma_squared_p_krig = ok_object.execute("grid", xx_krig, yy_krig)
 
-            # Get resolution
-            xres = (max_x_rain - min_x_rain) / len(XX_pk_krig)
-            yres = (max_y_rain - min_y_rain) / len(YY_pk_krig)
+            # create the plot
+            fig = interpolation_plot(
+                value_array=z_krig,
+                extent=[min_x_train, max_x_train, max_y_train, min_y_train],
+                country_gdf=country_gdf,
+                datetime_obj=context['chosen_date'],
+                chosen_var=context['chosen_var'],
+                chosen_country=context['chosen_country']
+            )
 
-            # Set transform
-            transform = Affine.translation(min_x_rain - xres / 2, min_y_rain - yres / 2) * Affine.scale(xres, yres)
-
-            plot_input = np.ma.getdata(Z_pk_krig)
-
-            fig, ax = plt.subplots(1, figsize=(7, 7))
-
-            # this line changes every plot
-            plt.style.use('bmh')
-
-            plt.imshow(plot_input, extent=[min_x_counties, max_x_counties, max_y_counties, min_y_counties])
-
-            plt.gca().invert_yaxis()
-
-            # # ax.plot(x_rain, y_rain, 'k.', markersize = 2, alpha = 0.5)
-            country_gdf.plot(ax=ax, color='none', edgecolor='black')
-
-            #ax.set_aspect('auto')
-
-            plt.tight_layout()
-
-            # convert the plot into memory buffer - needed for static plots
-            fig = get_graph()
-
-            # fig = interpolation_plot(
-            #     country_gdf,
-            #     data_gdf,
-            #     datetime_obj,
-            #     chosen_vars,
-            #     chosen_country
-            # )
-            #
             context['interpolation_plot'] = fig
 
     return render(request, 'analysis_page/interpolation.html', context)
 
 
-def interpolation_plot(country_gdf, data_gdf, datetime_obj, chosen_vars, chosen_country):
-    """ Returns interpolation plot. """
+def interpolation_plot(value_array, extent, country_gdf, datetime_obj, chosen_var, chosen_country):
+    """ Creates and returns interpolation plot. """
 
-    return 1
+    plt.switch_backend('AGG')
+    fig, ax = plt.subplots(figsize=(10, 7))
+
+    plot_input = np.ma.getdata(value_array)
+
+    # interpolated layer
+    ax.imshow(plot_input, extent=extent)
+    plt.gca().invert_yaxis()
+
+    # plot border on top
+    country_gdf.plot(ax=ax, color='none', edgecolor='black')
+
+    # add title, labels
+    var_data = long_name_and_unit(chosen_var)
+    date_str = datetime.strftime(datetime_obj, "%d-%m-%Y %H:%M")
+    ax.set_title(
+        f'Interpolated {var_data["long_name"]} [{var_data["unit"]}] in {chosen_country["name"]} at {date_str}',
+        fontdict={'fontsize': '15', 'fontweight': '2'},
+        pad=15
+    )
+    ax.set_xlabel(u"Longitude [\N{DEGREE SIGN}]")
+    ax.set_ylabel(u"Latitude [\N{DEGREE SIGN}]")
+
+    # min, max values for normalization
+    vmin = Location.objects.filter(
+        geometry__intersects=chosen_country['mpoly']
+    ).aggregate(min=Min(chosen_var))['min']
+    vmax = Location.objects.filter(
+        geometry__intersects=chosen_country['mpoly']
+    ).aggregate(max=Max(chosen_var))['max']
+
+    # normalized legend
+    sm = plt.cm.ScalarMappable(cmap='viridis', norm=plt.Normalize(vmin=vmin, vmax=vmax))
+    sm._A = []
+    fig.colorbar(sm)
+
+    ax.set_aspect('auto')
+    plt.tight_layout()
+
+    # convert the plot into memory buffer - needed for static plots
+    fig = get_graph()
+
+    return fig
 
 
 def get_graph():
@@ -453,7 +461,7 @@ def animation(request):
 
     context = {
         'countries': WorldBorder.objects.all().order_by('name'),
-        'variables': ['temp', 'rel_hum', 'tcc', 'spec_hum', 'u_wind', 'v_wind', 'gust', 'pwat'],
+        'variables': ['temp', 'rel_hum', 'spec_hum', 'tcc', 'u_wind', 'v_wind', 'gust', 'pwat'],
     }
 
     if request.method == 'POST':
