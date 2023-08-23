@@ -1,0 +1,237 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@200;300;400;500;600;700&display=swap');
+*{
+  margin: 0;
+  padding: 0;
+  font-family: "Open Sans" , sans-serif;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+}
+
+body {
+    background-color: rgb(242, 246, 249);
+}
+
+section {
+    display: grid;
+    place-content: center;
+    min-height: 100vh;
+    padding: 100px 150px;
+    text-align: center;
+    background-color: #fff;
+    color: #20293D;
+}
+
+#about {
+    min-height: 70vh;
+    padding-left: 200px;
+    padding-right: 200px;
+}
+
+section p {
+    font-size:14px;
+    line-height: 1.5 !important;
+}
+/*
+section ul li {
+    font-size:14px;
+    line-height: 1.5 !important;
+}
+*/
+body section:not(:first-child) {
+    margin-top: 20px;
+}
+
+.footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 30vh;
+    border-top: 1px solid;
+    border-top-color: rgba(227,232,237,1.00);
+    font-size: 12px;
+    color: #20293d;
+}
+
+#project-name {
+    margin-bottom: 50px;
+    font-weight: 300;
+    font-size: 24px;
+}
+
+#thesis-purpose {
+    text-align: justify;
+}
+
+.data-section-container {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+.pages {
+    display: flex;
+    width: 300%;
+    box-sizing: border-box;
+}
+
+.page {
+    width: 100%;
+    height: 80vh;
+    flex-direction: column;
+    transition: all 1s;
+    background-color: #fff;
+    border-radius: 25px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.page-image {
+    border-bottom-left-radius: 25px;
+    border-top-left-radius: 25px;
+    border: 1px solid;
+    border-color: rgba(227,232,237,1.00);
+}
+
+.image-one {
+    background: url('../static/images/nomads.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    filter: brightness(85%);
+}
+
+.image-two {
+    background: url('../static/images/nomads-params-layers.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    filter: brightness(85%);
+}
+
+.image-three {
+    background: url('../static/images/points-resolution.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.page-text {
+    border-bottom-right-radius: 25px;
+    border-top-right-radius: 25px;
+    padding: 30px;
+    position: relative;
+}
+
+p {
+    text-align: justify;
+}
+
+.page h1 {
+    margin-bottom: 50px;
+}
+
+section h1 {
+    margin-bottom: 50px;
+}
+
+.buttons {
+    display: grid;
+    margin: 0 auto;
+    width: 100px;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 0;
+}
+
+button {
+    position: absolute;
+    bottom: 0;
+    width: 30px;
+    height: 30px;
+    border: 1px solid;
+    border-color: #EB1510;
+    color: #EB1510;
+    background-color: #fff;
+    border-radius: 25px;
+}
+
+button:hover:not([disabled]) {
+    cursor: pointer;
+    border: 2px solid;
+}
+
+button:disabled {
+    border-color: #D3D3D3;
+}
+
+button i {
+    font-size: 20px;
+}
+
+button:disabled i {
+    color: #D3D3D3;
+}
+
+.screenshot img {
+    width: 650px;
+    box-shadow: 16px 31px 19px -12px rgba(66, 68, 90, 0.24);
+}
+
+.module-div {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 75px;
+}
+
+.child {
+    margin-bottom: 150px;
+    text-align: left;
+}
+
+.child h3{
+    margin-bottom: 15px;
+}
+
+.module-link {
+    margin-top: 30px;
+    border: 1px solid;
+    border-color: #EB1510;
+    padding: 5px 9px;
+    border-radius: 4px;
+    width:fit-content;
+}
+
+.module-link a {
+    text-decoration: none;
+    color: #EB1510;
+    font-size: 12px;
+}
+
+.module-link:hover {
+    font-weight: 550;
+    cursor: pointer;
+}
+
+#module-description {
+    padding: 100px 150px 0 150px;
+}
+
+#explanation {
+    min-height: 50vh;
+    padding: 100px 150px;
+}
+
+#explanation p {
+    text-align: center;
+}
+
+#methods-list {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-gap: 20px;
+}
+
+#methods-list div {
+    min-height: 80px;
+    padding: 20px 10px 10px 10px;
+    border-radius: 8px;
+    border: 1px solid;
+    border-color: rgba(227,232,237,1.00);
+    box-shadow: 0px 10px 24px -5px rgba(66, 68, 90, 0.27);
+}
