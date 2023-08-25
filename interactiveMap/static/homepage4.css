@@ -180,7 +180,7 @@ button:disabled i {
 }
 
 .child {
-    margin-bottom: 150px;
+    margin-bottom: 100px;
     text-align: left;
 }
 
@@ -228,6 +228,7 @@ button:disabled i {
 }
 
 #methods-list div {
+    margin-top: 20px;
     min-height: 80px;
     padding: 20px 10px 10px 10px;
     border-radius: 8px;

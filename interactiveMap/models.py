@@ -60,3 +60,16 @@ class CountryRegion(models.Model):
     # Returns the string representation of the model.
     def __str__(self):
         return self.name
+
+
+
+class RelevantCountry(models.Model):
+    iso3 = models.CharField("3 Digit ISO", max_length=3)
+    # conveys the information if all regions of the country intersect points
+    all_regions = models.BooleanField()
+
+
+class RelevantCountry1(models.Model):
+    iso3 = models.CharField("3 Digit ISO", max_length=3)
+    # conveys the information if all regions of the country intersect points
+    all_regions = models.BooleanField()

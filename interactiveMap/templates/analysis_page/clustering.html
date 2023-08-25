@@ -27,6 +27,24 @@ The Clustering tab empowers users to reveal data clusters, offering insights int
         <form method="post">
         {% csrf_token %}
             <div class="user-input">
+                <label for="n_clusters">Number of clusters:</label>
+                <input type="number" id="n_clusters" name="n_clusters" class="input-number" value="5" min="1" step="1"/>
+            </div>
+
+            <div class="user-input">
+                <label for="floor">Min num of points in each cluster:</label>
+                <input type="number" id="floor" name="floor" class="input-number" value="5" min="1" step="1"/>
+            </div>
+
+            <div class="user-input">
+                <label for="islands">Include 'islands':</label>
+                <select id="islands" name="islands">
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                </select>
+            </div>
+
+            <div class="user-input">
                 <label for="country">Select country:</label>
                 <select id="country" name="country" required>
                     <option selected disabled style="display:none;" value=""></option>
@@ -59,24 +77,6 @@ The Clustering tab empowers users to reveal data clusters, offering insights int
                             <option value="{{ time.time|date:'d-m-Y H:i' }}">{{ time.time|date:"d-m-Y H:i" }}</option>
                         {% endfor %}
                     {% endif %}
-                </select>
-            </div>
-
-            <div class="user-input">
-                <label for="n_clusters">Number of clusters:</label>
-                <input type="number" id="n_clusters" name="n_clusters" class="input-number" value="5" min="1" step="1"/>
-            </div>
-
-            <div class="user-input">
-                <label for="floor">Minimum number of points in each cluster:</label>
-                <input type="number" id="floor" name="floor" class="input-number" value="5" min="1" step="1"/>
-            </div>
-
-            <div class="user-input">
-                <label for="islands">Include 'islands':</label>
-                <select id="islands" name="islands">
-                    <option value="yes">Yes</option>
-                    <option value="no">No</option>
                 </select>
             </div>
 

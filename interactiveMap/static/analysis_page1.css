@@ -8,10 +8,8 @@
   line-height: 1.1;
 }
 
-/*comment background-color*/
 .content-wrapper {
     margin: 80px 0 0 0;
-    /*background-color: #D3D3D3;*/
 }
 
 h1 {
@@ -112,20 +110,34 @@ ol li {
     color: #333333;
 }
 
-
 .form {
-    width: 100%;
-    margin: 30px 0;
+    width: 95%;
+    margin-top: 30px;
+    margin-bottom: 10px;
 }
+
+form {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 45px;
+    row-gap: 15px;
+}
+
 
 .user-input {
-    float: left;
-    width: 33%;
+    display: inline-block;
 }
 
-select, label{
-    display: block;
-    margin: 5px 0;
+select {
+    width: 100%;
+}
+
+label {
+    float: left;
+}
+
+.submit-button {
+    width: 100px;
 }
 
 label {
@@ -134,7 +146,6 @@ label {
 }
 
 select {
-    width: 290px;
     margin-top: 10px;
     padding: 9px;
     font-size: 14px;
@@ -154,7 +165,7 @@ select {
 
 
 .submit-button {
-    margin-top: 30px;
+    margin-top: 20px;
     padding: 10px 20px;
     border-radius: 20px;
     border: 1px solid;
@@ -167,17 +178,17 @@ select {
     cursor: pointer;
 }
 
-/*Overwrite the multiselect js library*/
+
+
 .mult-select-tag .rounded {
     border-radius: 2px !important;
+    border: 1px solid !important;
+    border-color: #bababa !important;
 
 }
 
 .mult-select-tag .body {
-    margin: 5px 0 !important;
-    border-color: #bababa !important;
-
-    width: 290px !important;
+    margin: 10px 0 0 0 !important;
 }
 
 .mult-select-tag .btn-container {
@@ -200,8 +211,8 @@ select {
 }
 
 .input-number {
-    width: 290px;
-    margin-top: 5px;
+    width: 100%;
+    margin-top: 10px;
     padding: 9px;
     font-size: 14px;
     color: #333333;
@@ -210,3 +221,4 @@ select {
     border-radius: 2px;
     cursor: pointer;
 }
+

@@ -17,7 +17,7 @@ from pykrige.ok import OrdinaryKriging
 from shapely.geometry import Point
 from sklearn.model_selection import train_test_split
 
-from interactiveMap.models import Location, WorldBorder, CountryRegion
+from interactiveMap.models import Location, WorldBorder, CountryRegion, RelevantCountry1
 from django.db.models import Subquery, Avg, F, OuterRef, Min, Max
 from django.shortcuts import render
 
@@ -39,8 +39,10 @@ def getting_started(request):
 def timeseries(request):
     """ Renders the Timeseries tab. """
 
+    relevant_country_codes = RelevantCountry1.objects.values_list('iso3', flat=True)
+
     context = {
-        'countries': WorldBorder.objects.all().order_by('name'),
+        'countries': WorldBorder.objects.filter(iso3__in=relevant_country_codes).order_by('name'),
         'variables': ['temp', 'rel_hum', 'spec_hum', 'tcc', 'u_wind', 'v_wind', 'gust', 'pwat']
     }
 
@@ -199,7 +201,8 @@ def timeseries(request):
                 y=meteo_var,
                 color=region,
                 markers=True,
-                title=f'Country Region-wise Average {var_data["long_name"]} [{var_data["unit"]}] Time Series',
+                title=f'Country Region-wise Average {var_data["long_name"]} [{var_data["unit"]}] '
+                      f'in {context["chosen_country2"]["name"]} Time Series',
                 labels={"x": "Time of Day (UTC)", "y": var_data['long_name'] + ' [' + var_data['unit'] + ']'},
             )
             fig.update_layout(legend_title_text='Regions')
@@ -231,8 +234,10 @@ def extract_var(country, meteo_variable):
 def interpolation(request):
     """ Renders the Interpolation tab. """
 
+    relevant_country_codes = RelevantCountry1.objects.values_list('iso3', flat=True)
+
     context = {
-        'countries': WorldBorder.objects.all().order_by('name'),
+        'countries': WorldBorder.objects.filter(iso3__in=relevant_country_codes).order_by('name'),
         'variables': ['temp', 'rel_hum', 'spec_hum', 'tcc', 'u_wind', 'v_wind', 'gust', 'pwat'],
         'times': Location.objects.values('time').distinct().order_by('time')
     }
@@ -459,8 +464,10 @@ def get_plot(country_gdf, data_gdf, chosen_country, chosen_var, chosen_date):
 def animation(request):
     """ Renders the Animation tab. """
 
+    relevant_country_codes = RelevantCountry1.objects.values_list('iso3', flat=True)
+
     context = {
-        'countries': WorldBorder.objects.all().order_by('name'),
+        'countries': WorldBorder.objects.filter(iso3__in=relevant_country_codes).order_by('name'),
         'variables': ['temp', 'rel_hum', 'spec_hum', 'tcc', 'u_wind', 'v_wind', 'gust', 'pwat'],
     }
 
@@ -549,8 +556,10 @@ def animation(request):
 def clustering(request):
     """ Renders the Clustering tab. """
 
+    relevant_country_codes = RelevantCountry1.objects.values_list('iso3', flat=True)
+
     context = {
-        'countries': WorldBorder.objects.all().order_by('name'),
+        'countries': WorldBorder.objects.filter(iso3__in=relevant_country_codes).order_by('name'),
         'times': Location.objects.values('time').distinct().order_by('time'),
         'variables': ['temp', 'rel_hum', 'spec_hum', 'tcc', 'u_wind', 'v_wind', 'gust', 'pwat']
     }
@@ -591,59 +600,64 @@ def clustering(request):
         data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
 
         # set parameters for model
-        # attrs_name = context['selected_variables']
-        w = libpysal.weights.Queen.from_dataframe(data_gdf)
-        trace = False
-        # n_clusters = 5
-        # floor = 5
-        # islands = "increase"
-
-        spanning_forest_kwds = dict(
-            dissimilarity=skm.manhattan_distances,
-            affinity=None,
-            reduction=np.sum,
-            center=np.mean,
-            verbose=2
-        )
-
-        # create SKATER model
-        model = spopt.region.Skater(
-            data_gdf,
-            w,
-            context['selected_variables'],
-            n_clusters=context['n_clusters'],
-            floor=context['floor'],
-            trace=trace,
-            islands=context['islands'],
-            spanning_forest_kwds=spanning_forest_kwds
-        )
 
         try:
-            model.solve()
+            w = libpysal.weights.Queen.from_dataframe(data_gdf)
+            trace = False
 
-            # store labels (clusters) from the model
-            data_gdf["model_regions"] = model.labels_
-
-            # plot the border and data clusters
-            fig = cluster_plot(
-                country_gdf,
-                data_gdf,
-                datetime_obj,
-                context['selected_variables'],
-                context['selected_country']
+            spanning_forest_kwds = dict(
+                dissimilarity=skm.manhattan_distances,
+                affinity=None,
+                reduction=np.sum,
+                center=np.mean,
+                verbose=2
             )
 
-            # calculate statistics
-            data_gdf["count"] = 1
-            data_gdf[["model_regions", "count"]].groupby(by="model_regions").count()
+            # create SKATER model
+            model = spopt.region.Skater(
+                data_gdf,
+                w,
+                context['selected_variables'],
+                n_clusters=context['n_clusters'],
+                floor=context['floor'],
+                trace=trace,
+                islands=context['islands'],
+                spanning_forest_kwds=spanning_forest_kwds
+            )
 
-            # return to context
-            context['clustering_plot'] = fig
+            try:
+                model.solve()
+
+                # store labels (clusters) from the model
+                data_gdf["model_regions"] = model.labels_
+
+                # plot the border and data clusters
+                fig = cluster_plot(
+                    country_gdf,
+                    data_gdf,
+                    datetime_obj,
+                    context['selected_variables'],
+                    context['selected_country']
+                )
+
+                # calculate statistics
+                data_gdf["count"] = 1
+                data_gdf[["model_regions", "count"]].groupby(by="model_regions").count()
+
+                # return to context
+                context['clustering_plot'] = fig
+
+            except Exception as error:
+                context['error'] = error
+                if "Islands must be larger than the quorum" in str(error):
+                    context['info'] = "One possible solution is to reduce the minimum number of points in each cluster."
 
         except Exception as error:
             context['error'] = error
-            if "Islands must be larger than the quorum" in str(error):
-                context['info'] = "One possible solution is to reduce the minimum number of points in each cluster."
+            if "QH6214 qhull input error: not enough points" in str(error):
+                context['info'] = "The selected country lacks sufficient data points to establish relationships among" \
+                                  " spatial objects. Please consider selecting a different country."
+
 
     return render(request, 'analysis_page/clustering.html', context)
 
