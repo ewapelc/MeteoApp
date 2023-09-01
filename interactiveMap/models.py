@@ -1,5 +1,6 @@
 from django.contrib.gis.db import models
 
+
 # Create your models here.
 class WorldBorder(models.Model):
     # Regular Django fields corresponding to the attributes in the
@@ -24,7 +25,6 @@ class WorldBorder(models.Model):
         return self.name
 
 
-
 class Location(models.Model):
     latitude = models.FloatField()
     longitude = models.FloatField()
@@ -45,7 +45,6 @@ class Location(models.Model):
     geometry = models.PointField()
 
 
-
 class CountryRegion(models.Model):
     # Regular Django fields corresponding to the attributes in the
     # regions GeoJson file.
@@ -62,14 +61,7 @@ class CountryRegion(models.Model):
         return self.name
 
 
-
 class RelevantCountry(models.Model):
-    iso3 = models.CharField("3 Digit ISO", max_length=3)
-    # conveys the information if all regions of the country intersect points
-    all_regions = models.BooleanField()
-
-
-class RelevantCountry1(models.Model):
     iso3 = models.CharField("3 Digit ISO", max_length=3)
     # conveys the information if all regions of the country intersect points
     all_regions = models.BooleanField()

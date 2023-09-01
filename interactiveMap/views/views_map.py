@@ -6,7 +6,7 @@ from matplotlib import cm
 import plotly.express as px
 from shapely.geometry import Polygon
 
-from interactiveMap.models import Location, WorldBorder, CountryRegion, RelevantCountry1
+from interactiveMap.models import Location, WorldBorder, CountryRegion, RelevantCountry
 from django.db.models import Subquery, OuterRef
 from django.db.models import Avg, Max, Min
 from django.shortcuts import render
@@ -15,7 +15,7 @@ from django.shortcuts import render
 def map_page(request):
     """ Renders the Interactive Map page. """
 
-    relevant_country_codes = RelevantCountry1.objects.values_list('iso3', flat=True)
+    relevant_country_codes = RelevantCountry.objects.values_list('iso3', flat=True)
 
     context = {
         'countries': WorldBorder.objects.filter(iso3__in=relevant_country_codes).order_by('name'),

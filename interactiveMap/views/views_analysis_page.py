@@ -17,7 +17,7 @@ from pykrige.ok import OrdinaryKriging
 from shapely.geometry import Point
 from sklearn.model_selection import train_test_split
 
-from interactiveMap.models import Location, WorldBorder, CountryRegion, RelevantCountry1
+from interactiveMap.models import Location, WorldBorder, CountryRegion, RelevantCountry
 from django.db.models import Subquery, Avg, F, OuterRef, Min, Max
 from django.shortcuts import render
 
@@ -39,7 +39,7 @@ def getting_started(request):
 def timeseries(request):
     """ Renders the Timeseries tab. """
 
-    relevant_country_codes = RelevantCountry1.objects.values_list('iso3', flat=True)
+    relevant_country_codes = RelevantCountry.objects.values_list('iso3', flat=True)
 
     context = {
         'countries': WorldBorder.objects.filter(iso3__in=relevant_country_codes).order_by('name'),
@@ -234,7 +234,7 @@ def extract_var(country, meteo_variable):
 def interpolation(request):
     """ Renders the Interpolation tab. """
 
-    relevant_country_codes = RelevantCountry1.objects.values_list('iso3', flat=True)
+    relevant_country_codes = RelevantCountry.objects.values_list('iso3', flat=True)
 
     context = {
         'countries': WorldBorder.objects.filter(iso3__in=relevant_country_codes).order_by('name'),
@@ -464,7 +464,7 @@ def get_plot(country_gdf, data_gdf, chosen_country, chosen_var, chosen_date):
 def animation(request):
     """ Renders the Animation tab. """
 
-    relevant_country_codes = RelevantCountry1.objects.values_list('iso3', flat=True)
+    relevant_country_codes = RelevantCountry.objects.values_list('iso3', flat=True)
 
     context = {
         'countries': WorldBorder.objects.filter(iso3__in=relevant_country_codes).order_by('name'),
@@ -556,7 +556,7 @@ def animation(request):
 def clustering(request):
     """ Renders the Clustering tab. """
 
-    relevant_country_codes = RelevantCountry1.objects.values_list('iso3', flat=True)
+    relevant_country_codes = RelevantCountry.objects.values_list('iso3', flat=True)
 
     context = {
         'countries': WorldBorder.objects.filter(iso3__in=relevant_country_codes).order_by('name'),

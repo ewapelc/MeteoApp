@@ -1,6 +1,6 @@
 import pandas as pd
 from django.core.management.base import BaseCommand
-from interactiveMap.models import RelevantCountry1
+from interactiveMap.models import RelevantCountry
 import os
 from sqlalchemy import create_engine
 
@@ -19,6 +19,6 @@ class Command(BaseCommand):
         if os.path.isfile(f):
             df = pd.read_csv(f)
             engine = create_engine("postgresql://meteoadmin:test123@localhost:5432/meteo_global")
-            df.to_sql(RelevantCountry1._meta.db_table, if_exists='append', con=engine, index=False)
+            df.to_sql(RelevantCountry._meta.db_table, if_exists='append', con=engine, index=False)
 
             print('\x1b[6;30;42m' + 'Successfully loaded data.' + '\x1b[0m')
