@@ -12,6 +12,7 @@ import libpysal
 from sklearn.metrics import pairwise as skm
 import numpy as np
 import spopt
+from sklearn.preprocessing import MinMaxScaler
 
 from pykrige.ok import OrdinaryKriging
 from shapely.geometry import Point
@@ -593,9 +594,16 @@ def clustering(request):
             geometry__intersects=context['selected_country']['mpoly']
         ).values()
 
-        # change queryset into GeoDataFrame
+        # change into DataFrame
         data_df = pd.DataFrame(points)
         data_df.dropna(axis=0, inplace=True)
+
+        # normalization of meteorological variables - needed for clustering algorithm
+        cols_to_scale = ['temp', 'rel_hum', 'spec_hum', 'tcc', 'u_wind', 'v_wind', 'gust', 'pwat']
+        scaler = MinMaxScaler()
+        data_df[cols_to_scale] = scaler.fit_transform(data_df[cols_to_scale])
+
+        # change queryset into GeoDataFrame
         wkt2 = data_df.geometry.apply(lambda x: x.wkt)
         data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs='EPSG:4326')
 
