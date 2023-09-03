@@ -14,10 +14,6 @@ import numpy as np
 import spopt
 from sklearn.preprocessing import MinMaxScaler
 
-from pykrige.ok import OrdinaryKriging
-from shapely.geometry import Point
-from sklearn.model_selection import train_test_split
-
 from interactiveMap.models import Location, WorldBorder, CountryRegion, RelevantCountry
 from django.db.models import Subquery, Avg, F, OuterRef, Min, Max
 from django.shortcuts import render
@@ -249,8 +245,7 @@ def interpolation(request):
             context['chosen_var'] = request.POST.get('variable')
             context['chosen_date'] = datetime.strptime((request.POST.get('date')), "%d-%m-%Y %H:%M")
 
-            # projection string typical for California - change this later
-            proj = "+proj=aea +lat_1=50 +lat_2=0 +lat_0=0 +lon_0=0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=m +no_defs "
+            proj = "EPSG:4326"
 
             # filter and transform borders data
             country = list(
@@ -268,82 +263,86 @@ def interpolation(request):
                 Location.objects.filter(
                     time=context['chosen_date'],
                     geometry__intersects=context['chosen_country']['mpoly']
-                ).values(context['chosen_var'], 'geometry')
+                ).values(context['chosen_var'], 'geometry', 'latitude', 'longitude')
             )
             data_df = pd.DataFrame(points)
             data_df.dropna(axis=0, inplace=True)
             wkt2 = data_df.geometry.apply(lambda x: x.wkt)
             data_gdf = gpd.GeoDataFrame(data_df, geometry=gpd.GeoSeries.from_wkt(wkt2), crs=proj)
 
-            # get coordinates of points
-            x_coord = data_gdf["geometry"].x
-            y_coord = data_gdf["geometry"].y
+            x = data_gdf.longitude.to_numpy()
+            y = data_gdf.latitude.to_numpy()
+            z = data_gdf[context['chosen_var']].to_numpy()
 
-            # create list of XY coordinate pairs
-            coords_pairs = [list(xy) for xy in zip(x_coord, y_coord)]
+            # size of the grid to interpolate
+            nx, ny = 100, 100
 
-            # get list of chosen variable values
-            values_list = list(data_gdf[context['chosen_var']])
+            # generate two arrays of evenly space data between ends of previous arrays
+            xi = np.linspace(x.min(), x.max(), nx)
+            yi = np.linspace(y.min(), y.max(), ny)
 
-            # split data into testing and training sets
-            coords_train, coords_test, value_train, value_test = train_test_split(coords_pairs,
-                                                                                  values_list,
-                                                                                  test_size=0.20,
-                                                                                  random_state=42)
+            # generate grid
+            xi, yi = np.meshgrid(xi, yi)
 
-            # create separate GeoDataFrames for testing and training sets
-            train_gdf = gpd.GeoDataFrame(geometry=[Point(x, y) for x, y in coords_train], crs=proj)
-            train_gdf["Actual_Value"] = value_train
-            test_gdf = gpd.GeoDataFrame(geometry=[Point(x, y) for x, y in coords_test], crs=proj)
-            test_gdf["Actual_Value"] = value_test
+            # collapse grid into 1D
+            xi, yi = xi.flatten(), yi.flatten()
 
-            # get minimum and maximum coordinate values of training points
-            min_x_train, min_y_train, max_x_train, max_y_train = train_gdf.total_bounds
+            # Calculate IDW
+            grid1 = simple_idw(x, y, z, xi, yi, power=3)
+            grid1 = grid1.reshape((ny, nx))
 
-            # create a 100x100 grid (horizontal and vertical cell counts should be the same)
-            xx_krig = np.linspace(min_x_train, max_x_train, 100)
-            yy_krig = np.linspace(min_y_train, max_y_train, 100)
-
-            # generate ordinary kriging object
-            ok_object = OrdinaryKriging(
-                np.array(x_coord),
-                np.array(y_coord),
-                values_list,
-                variogram_model="linear",
-                verbose=False,
-                enable_plotting=False,
-                coordinates_type="euclidean",
-            )
-
-            # evaluate the method on grid
-            z_krig, sigma_squared_p_krig = ok_object.execute("grid", xx_krig, yy_krig)
-
-            # create the plot
-            fig = interpolation_plot(
-                value_array=z_krig,
-                extent=[min_x_train, max_x_train, max_y_train, min_y_train],
-                country_gdf=country_gdf,
-                datetime_obj=context['chosen_date'],
-                chosen_var=context['chosen_var'],
-                chosen_country=context['chosen_country']
-            )
+            fig = interpolation_plot(x, y, grid1, country_gdf, context['chosen_var'], context['chosen_country'], context['chosen_date'])
 
             context['interpolation_plot'] = fig
 
     return render(request, 'analysis_page/interpolation.html', context)
 
 
-def interpolation_plot(value_array, extent, country_gdf, datetime_obj, chosen_var, chosen_country):
-    """ Creates and returns interpolation plot. """
+def distance_matrix(x0, y0, x1, y1):
+    """ Make a distance matrix between pairwise observations.
+    Note: from <http://stackoverflow.com/questions/1871536>
+    """
+
+    obs = np.vstack((x0, y0)).T
+    interp = np.vstack((x1, y1)).T
+
+    d0 = np.subtract.outer(obs[:, 0], interp[:, 0])
+    d1 = np.subtract.outer(obs[:, 1], interp[:, 1])
+
+    # calculate hypotenuse
+    return np.hypot(d0, d1)
+
+
+def simple_idw(x, y, z, xi, yi, power=1):
+    """ Simple inverse distance weighted (IDW) interpolation
+    Weights are proportional to the inverse of the distance, so as the distance
+    increases, the weights decrease rapidly.
+    The rate at which the weights decrease is dependent on the value of power.
+    As power increases, the weights for distant points decrease rapidly.
+    """
+
+    dist = distance_matrix(x, y, xi, yi)
+
+    # In IDW, weights are 1 / distance
+    weights = 1.0 / (dist + 1e-12) ** power
+
+    # Make weights sum to one
+    weights /= weights.sum(axis=0)
+
+    # Multiply the weights for each interpolated point by all observed Z-values
+    return np.dot(weights.T, z)
+
+
+def interpolation_plot(x, y, grid, country_gdf, chosen_var, chosen_country, datetime_obj):
+    """ Plot the input points and the result """
 
     plt.switch_backend('AGG')
     fig, ax = plt.subplots(figsize=(10, 7))
 
-    plot_input = np.ma.getdata(value_array)
-
     # interpolated layer
-    ax.imshow(plot_input, extent=extent)
+    plt.imshow(grid, extent=(x.min(), x.max(), y.max(), y.min()), cmap='viridis', interpolation='gaussian')
     plt.gca().invert_yaxis()
+    # plt.colorbar()
 
     # plot border on top
     country_gdf.plot(ax=ax, color='none', edgecolor='black')
@@ -372,7 +371,6 @@ def interpolation_plot(value_array, extent, country_gdf, datetime_obj, chosen_va
     sm._A = []
     fig.colorbar(sm)
 
-    ax.set_aspect('auto')
     plt.tight_layout()
 
     # convert the plot into memory buffer - needed for static plots
@@ -665,7 +663,6 @@ def clustering(request):
             if "QH6214 qhull input error: not enough points" in str(error):
                 context['info'] = "The selected country lacks sufficient data points to establish relationships among" \
                                   " spatial objects. Please consider selecting a different country."
-
 
     return render(request, 'analysis_page/clustering.html', context)
 
