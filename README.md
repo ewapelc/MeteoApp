@@ -16,7 +16,7 @@ The primary goal of this study is to process meteorological data sourced from th
   - Time Series Charts: Visual representations of temporal trends using interactive Plotly charts
   - Cartograms: Spatially distorted maps using Choropleth layers on top of interactive Folium base map
   - Spatial Interpolation (Inverse distance weighting - IDW): Interpolating meteorological data across spatial dimensions
-  - Clustering (SKATER): IClustering algorithm using Spopt package based on PySAL library
+  - Clustering (SKATER): Clustering algorithm using Spopt package based on PySAL library
   - Animations: Dynamic visualizations using custom GIFs
 
 ## Repository Structure
@@ -37,7 +37,7 @@ The primary goal of this study is to process meteorological data sourced from th
 <summary>Click to expand/collapse</summary>
 
 Package            Version
------------------- ---------
+---
 affine             2.4.0    
 aiohttp            3.8.4    
 aiosignal          1.3.1    
@@ -123,34 +123,48 @@ yarl               1.9.2
 zarr               2.12.0
 zipp               3.15.0
 
+
 </details>
 
 ## Data Management
 
-The repository includes scripts and commands for manually downloading, modifying, and loading data into the PostgreSQL database. A tutorial guides users through executing these commands. Additionally, a database backup file is provided for easy replication.
+The repository includes scripts and commands for manually downloading, modifying, and loading data into the PostgreSQL database. A tutorial guides users through executing these commands. 
+Additionally, a database backup file is provided for easy replication.
 
 <details>
 <summary>Click to expand/collapse</summary>
 
-Follow the tutorial for manual data processing:
+Follow the tutorial for manual meteorological data processing:
 
-- **data download**:
-Run Django shell
+- **downloading meteorological data**:
+  - Run Django shell
 `python manage.py shell`
 
-Import the data_downloader module as a Python module
+  - Import the data_downloader module as a Python module
 `import data_downloader`
 
-Run the download_files script with a date range from 30th October 2023 to 3rd November 2023
+  - Run the download_files script with a date range from 30th October 2023 to 3rd November 2023
 `data_downloader.download_files(startdate='20231030', enddate='20231103')`
 
-- **data modification**:
-To execute the script, run the following command in the terminal from the project folder (../MeteoApp):
+- **modifying meteorological data**:
+  - To execute the script, run the following command in the terminal from the project folder (../MeteoApp):
 `python manage.py modify_data`
 
-- **loading data into database**:
-To run the script, execute the following command in the terminal from the project folder (optionally, execute the command to truncate the 'location' table)
+- **loading meteorological data into database**:
+  - To run the script, execute the following command in the terminal from the project folder (optionally, execute the command to truncate the 'location' table)
 `python manage.py add_data`
+
+- **loading borders data into database**:
+  - Run Django shell
+`python manage.py shell`
+
+  - Import the load module as a Python module
+`from interactiveMap import load`
+
+  - Run the load script with the run() method
+`load.run()`
+
+</details>
 
 ## Google Drive Links
 
@@ -161,6 +175,12 @@ To run the script, execute the following command in the terminal from the projec
 
 Links to external repositories and sources that inspired or provided guidance for the project.
 
+1. [tomchavakis](https://github.com/tomchavakis/grib-downloader/blob/main/grib_downloader.py)
+   - Donwloading data from the NOAA server.
+
+2. [Majramos](https://gist.github.com/Majramos/5e8985adc467b80cccb0cc22d140634e)
+   - Implementation of spatial interpolation method (Inverse distance weighting)
+  
 ## User Experience (UX)
 
 The application focuses on delivering a seamless user experience with two distinct modules, each featuring a unique interface and specialized functionalities. For a firsthand experience, a link to a recording showcasing the application in use is provided.
