@@ -181,7 +181,7 @@ Follow the tutorial for manual data processing:
 Links to external repositories and sources that inspired or provided guidance for the project.
 
 1. [tomchavakis](https://github.com/tomchavakis/grib-downloader/blob/main/grib_downloader.py)
-   - Donwloading data from the NOAA server.
+   - Downloading data from the NOAA server.
 
 2. [Majramos](https://gist.github.com/Majramos/5e8985adc467b80cccb0cc22d140634e)
    - Implementation of spatial interpolation method (Inverse distance weighting)
