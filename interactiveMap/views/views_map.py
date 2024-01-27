@@ -53,7 +53,7 @@ def map_page(request):
         meteo_var = queryset.values_list('meteo_var', flat=True)
         time1 = queryset.values_list('time', flat=True)
         timezone_corrected_l = [datetime.strptime(
-            datetime.strftime(TIME + timedelta(hours=2), "%d-%m-%Y %H:%M"),
+            datetime.strftime(TIME + timedelta(hours=1), "%d-%m-%Y %H:%M"),
             "%d-%m-%Y %H:%M"
         ) for TIME in time1]
 
@@ -65,7 +65,7 @@ def map_page(request):
             time=datetime_obj
         ).values_list('time', flat=True)
         timezone_corrected = datetime.strptime(
-            datetime.strftime(time2[0] + timedelta(hours=2), "%d-%m-%Y %H:%M"),
+            datetime.strftime(time2[0] + timedelta(hours=1), "%d-%m-%Y %H:%M"),
             "%d-%m-%Y %H:%M"
         )
 

@@ -72,7 +72,7 @@ def timeseries(request):
 
             # transform timezone
             timezone_corrected_l = [datetime.strptime(
-                datetime.strftime(TIME + timedelta(hours=2), "%d-%m-%Y %H:%M"),
+                datetime.strftime(TIME + timedelta(hours=1), "%d-%m-%Y %H:%M"),
                 "%d-%m-%Y %H:%M"
             ) for TIME in time]
 
@@ -126,7 +126,7 @@ def timeseries(request):
 
             # transform timezone
             timezone_corrected_l = [datetime.strptime(
-                datetime.strftime(TIME + timedelta(hours=2), "%d-%m-%Y %H:%M"),
+                datetime.strftime(TIME + timedelta(hours=1), "%d-%m-%Y %H:%M"),
                 "%d-%m-%Y %H:%M"
             ) for TIME in time]
 
@@ -188,7 +188,7 @@ def timeseries(request):
 
             # convert the timezone
             timezone_corrected_l = [datetime.strptime(
-                datetime.strftime(TIME + timedelta(hours=2), "%d-%m-%Y %H:%M"),
+                datetime.strftime(TIME + timedelta(hours=1), "%d-%m-%Y %H:%M"),
                 "%d-%m-%Y %H:%M"
             ) for TIME in time]
 
@@ -439,7 +439,7 @@ def get_plot(country_gdf, data_gdf, chosen_country, chosen_var, chosen_date):
 
     # add details
     var_data = long_name_and_unit(chosen_var)
-    date_str = datetime.strftime(chosen_date + timedelta(hours=2), "%d-%m-%Y %H:%M")
+    date_str = datetime.strftime(chosen_date + timedelta(hours=1), "%d-%m-%Y %H:%M")
     ax.set_title(
         f'{var_data["long_name"]} [{var_data["unit"]}] in {chosen_country["name"]} at {date_str}',
         fontdict={'fontsize': '15', 'fontweight': '2'},
@@ -509,7 +509,7 @@ def animation(request):
                 fig = get_plot(country_gdf, data_gdf, context['chosen_country'], context['chosen_var'], date['time'])
 
                 # file destination
-                date_str = datetime.strftime(date['time'] + timedelta(hours=2), "%d%m%Y-t%Hz")
+                date_str = datetime.strftime(date['time'] + timedelta(hours=1), "%d%m%Y-t%Hz")
                 filename = date_str + '-frame.png'
                 parent = os.path.dirname
                 destination = os.path.join(

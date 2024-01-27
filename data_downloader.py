@@ -18,7 +18,7 @@ timelist = ['00', '06', '12', '18']
 
 DOWNLOADS_DIR = "filestorage/grib"
 VARIABLES = "UGRD,VGRD,GUST,TMP,RH,SPFH,PWAT,TCDC"
-LEVELS = "200_mb,entire_atmosphere_%5C%28considered_as_a_single_layer%5C%29,surface"
+LEVELS = "1000_mb,entire_atmosphere_%5C%28considered_as_a_single_layer%5C%29,surface"
 
 
 def create_server_by_time(time):
